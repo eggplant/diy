@@ -1,0 +1,1568 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>鹈鹕骑车</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=ZCOOL+KuaiLe&display=swap">
+<style>
+/* Layout: one full-bleed SVG stage; a frosted control dock floats bottom-centre, a small title tag sits top-left. */
+:root {
+  --stage: #8bc7ec;
+  --ink: #f8fafc;
+  --ink-dim: rgba(248, 250, 252, .8);
+  --glass: rgba(14, 28, 46, .42);
+  --glass-line: rgba(255, 255, 255, .22);
+  --glass-hover: rgba(255, 255, 255, .16);
+  --accent: #ffd35a;
+  --shade: rgba(8, 22, 42, .34);
+  --font-ui: "Fredoka", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-title: "ZCOOL KuaiLe", "Fredoka", "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+html, body { height: 100%; margin: 0; overflow: hidden; }
+body {
+  background: var(--stage);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-tap-highlight-color: transparent;
+}
+#scene { position: fixed; inset: 0; width: 100%; height: 100%; display: block; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+#scene .hit, #rig { cursor: pointer; }
+.decal { font-family: var(--font-title); font-size: 7.6px; letter-spacing: 1px; }
+@keyframes tw { 0%, 100% { opacity: .2 } 50% { opacity: 1 } }
+.tw { animation: tw var(--d, 3s) ease-in-out infinite; animation-delay: var(--dl, 0s); }
+#scene.paused .tw { animation-play-state: paused; }
+.lampK { opacity: var(--lampK, 0); }
+.starK { opacity: var(--starK, 0); }
+
+.tag { position: fixed; top: calc(14px + env(safe-area-inset-top, 0px)); left: max(18px, env(safe-area-inset-left, 0px)); pointer-events: none; text-shadow: 0 1px 12px var(--shade); }
+.tag h1 { margin: 0; font-family: var(--font-title); font-weight: 400; font-size: 30px; line-height: 1.1; letter-spacing: .08em; }
+.tag p { margin: 5px 0 0; font-size: 13px; font-weight: 500; color: var(--ink-dim); font-variant-numeric: tabular-nums; letter-spacing: .03em; }
+
+.dock {
+  position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  display: flex; align-items: center; gap: 2px;
+  padding: 5px; border-radius: 999px;
+  background: var(--glass); border: 1px solid var(--glass-line);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4); backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 10px 30px var(--shade);
+  transition: opacity .6s ease, transform .6s ease;
+  max-width: calc(100% - 32px); box-sizing: border-box;
+}
+.dock.idle { opacity: 0; transform: translate(-50%, 12px); pointer-events: none; }
+.btn {
+  appearance: none; -webkit-appearance: none; border: 0; margin: 0; padding: 0;
+  width: 42px; height: 42px; border-radius: 50%; flex: none;
+  background: transparent; color: var(--ink); cursor: pointer;
+  display: grid; place-items: center; transition: background .2s, transform .15s;
+}
+.btn:hover { background: var(--glass-hover); }
+.btn:active { transform: scale(.9); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.btn svg { width: 22px; height: 22px; display: block; }
+.sep { width: 1px; height: 24px; background: var(--glass-line); margin: 0 4px; flex: none; }
+.speed { display: flex; align-items: center; gap: 8px; padding: 0 6px 0 10px; font-size: 13px; color: var(--ink-dim); }
+.speed .lab { flex: none; font-weight: 500; }
+.kmh { font-variant-numeric: tabular-nums; font-size: 13px; font-weight: 500; min-width: 66px; text-align: right; color: var(--ink); white-space: nowrap; }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 118px; height: 26px; background: transparent; margin: 0; cursor: pointer; }
+input[type=range]::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, var(--accent) var(--fill, 41%), var(--glass-line) var(--fill, 41%)); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--ink); margin-top: -7px; box-shadow: 0 1px 5px var(--shade); }
+input[type=range]::-moz-range-track { height: 4px; border-radius: 2px; background: var(--glass-line); }
+input[type=range]::-moz-range-progress { height: 4px; border-radius: 2px; background: var(--accent); }
+input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 0; border-radius: 50%; background: var(--ink); box-shadow: 0 1px 5px var(--shade); }
+input[type=range]:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+.hint {
+  position: fixed; left: 50%; bottom: calc(78px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  font-size: 12.5px; color: var(--ink-dim); white-space: nowrap; pointer-events: none;
+  text-shadow: 0 1px 8px var(--shade); transition: opacity 1.2s ease; letter-spacing: .04em;
+}
+.hint.gone { opacity: 0; }
+@media (max-width: 600px) {
+  .kmh { display: none; }
+  input[type=range] { width: 82px; }
+  .btn { width: 38px; height: 38px; }
+  .tag h1 { font-size: 24px; }
+  .hint { display: none; }
+}
+@media (hover: none) { .hint { display: none; } }
+</style>
+</head>
+<body>
+<svg id="scene" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="一只围着红围巾的白鹈鹕，骑着薄荷绿复古单车，沿着海边木栈道前进"></svg>
+
+<div class="tag"><h1>鹈鹕骑车</h1><p id="odo">今日里程 0.00 km</p></div>
+<div class="hint" id="hint">空格 暂停 · ← → 调速 · B 按铃 · F 吃鱼 · J 跳 · N 昼夜 · 也可以点鹈鹕和单车</div>
+
+<div class="dock" id="dock" role="toolbar" aria-label="动画控制">
+  <button class="btn" id="bPlay" type="button" aria-label="暂停" title="暂停（空格）"></button>
+  <div class="speed">
+    <span class="lab" aria-hidden="true">慢</span>
+    <input type="range" id="speed" min="0.3" max="2" step="0.05" value="1" aria-label="骑行速度">
+    <span class="lab" aria-hidden="true">快</span>
+    <span class="kmh" id="kmh">11.0 km/h</span>
+  </div>
+  <span class="sep" aria-hidden="true"></span>
+  <button class="btn" id="bBell" type="button" aria-label="按铃" title="按铃（B）">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.5c.9-1 1.3-2.4 1.3-4.6a4.7 4.7 0 0 1 9.4 0c0 2.2.4 3.6 1.3 4.6z"/><path d="M10.2 19.2a2 2 0 0 0 3.6 0"/><path d="M12 5.4V4"/><path d="M19.5 7.5c.8.9 1.2 2 1.3 3.2M4.5 7.5c-.8.9-1.2 2-1.3 3.2"/></svg>
+  </button>
+  <button class="btn" id="bFish" type="button" aria-label="让鹈鹕吃一条鱼" title="吃条鱼（F）">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12c2.6-3.6 6-5.2 9.4-5.2 3.6 0 6.3 2 8.1 5.2-1.8 3.2-4.5 5.2-8.1 5.2C9 17.2 5.6 15.6 3 12z"/><path d="M3 12 1.2 8.6M3 12l-1.8 3.4"/><circle cx="16.4" cy="11" r=".9" fill="currentColor"/><path d="M12.6 8.6c.8 1 .8 5.8 0 6.8"/></svg>
+  </button>
+  <button class="btn" id="bNight" type="button" aria-label="切换到夜晚" title="昼夜切换（N）"></button>
+</div>
+
+<script>
+(() => {
+'use strict';
+if (!document.documentElement.lang) document.documentElement.lang = 'zh-CN';
+/* =========================================================================
+   helpers
+   ========================================================================= */
+const NS = 'http://www.w3.org/2000/svg';
+const $ = id => document.getElementById(id);
+const svg = $('scene');
+const TAU = Math.PI * 2, DEG = Math.PI / 180;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const easeIO = t => t < .5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t);
+const r2 = n => Math.round(n * 100) / 100;
+const mod = (a, n) => ((a % n) + n) % n;
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const rand = rng(20261127);
+const rr = (a, b) => a + (b - a) * rand();
+const pick = a => a[(rand() * a.length) | 0];
+const mk = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); if (attrs) for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const F = (x, y, a) => ({ x, y, a, c: Math.cos(a), s: Math.sin(a) });
+const ap = (f, p) => [f.x + p[0] * f.c - p[1] * f.s, f.y + p[0] * f.s + p[1] * f.c];
+const inv = (f, p) => { const dx = p[0] - f.x, dy = p[1] - f.y; return [dx * f.c + dy * f.s, -dx * f.s + dy * f.c]; };
+const tf = f => `translate(${r2(f.x)},${r2(f.y)}) rotate(${r2(f.a / DEG)})`;
+const P = p => `${r2(p[0])},${r2(p[1])}`;
+const dir = (deg, r, c) => [c[0] + r * Math.cos(deg * DEG), c[1] + r * Math.sin(deg * DEG)];
+function bez(a, b, c, d, t) { const u = 1 - t, A = u * u * u, B = 3 * u * u * t, C = 3 * u * t * t, D = t * t * t; return [A * a[0] + B * b[0] + C * c[0] + D * d[0], A * a[1] + B * b[1] + C * c[1] + D * d[1]]; }
+function bezD(a, b, c, d, t) { const u = 1 - t; return [3 * u * u * (b[0] - a[0]) + 6 * u * t * (c[0] - b[0]) + 3 * t * t * (d[0] - c[0]), 3 * u * u * (b[1] - a[1]) + 6 * u * t * (c[1] - b[1]) + 3 * t * t * (d[1] - c[1])]; }
+function through(pts, cmd) {            // smooth curve through points (quadratic mid-point chain)
+  let d = cmd + P(pts[0]);
+  for (let i = 1; i < pts.length - 1; i++) d += 'Q' + P(pts[i]) + ' ' + P([(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2]);
+  return d + 'L' + P(pts[pts.length - 1]);
+}
+const attr = (e, k, v) => e.setAttribute(k, v);
+
+/* =========================================================================
+   palette — every colour is a CSS variable so day → dusk → night can be graded
+   [day, dusk?, night?, isForeground]  (missing values are derived by tinting)
+   ========================================================================= */
+const PAL = {
+  skyTop: ['#3b8bd3', '#4a4f98', '#060c25'], skyMid: ['#8bc7ec', '#c87f9d', '#132049'], skyHor: ['#fde6c3', '#ffad72', '#2a376a'],
+  sun: ['#fff8e3', '#ffc27a', '#ffc27a'], sunGlow: ['#fff0c2', '#ff9a5a', '#ff9a5a'],
+  cloud: ['#ffffff', '#ffdcd0', '#353f69'], cloudSh: ['#d4e5f3', '#cf8ea3', '#222a52'],
+  far1: ['#9cc0cb', '#b0819b', '#1b274e'], far2: ['#80aab7', '#93698b', '#152042'],
+  lightH: ['#f4f1ea'], lightR: ['#d8544e'],
+  seaFar: ['#90d1e3', '#eaa98f', '#23365e'], seaNear: ['#2b87b7', '#475b90', '#0b1935'],
+  wave: ['#e4f7fc', '#ffd6c0', '#6a86bb'], glint: ['#ffffff', '#ffd79c', '#e6ecff'], foam: ['#ffffff', '#ffe8de', '#9ff2ff'],
+  wetSand: ['#d3b182'], sand: ['#f4d9a7'], sandSh: ['#e3c189'], sandDk: ['#caa36c'], sandLt: ['#fbe8c2'],
+  wood1: ['#c68c57'], wood2: ['#b98049'], wood3: ['#d09863'], wood4: ['#be8550'], seam: ['#7c4f2f'],
+  fascia: ['#8e5b36'], fasciaHi: ['#c08b59'], post: ['#6c4327'], postHi: ['#8c5a35'], brace: ['#5e3a22'],
+  lamp: ['#2c4747'], lampHi: ['#4f706d'], brass: ['#c9a24a'], glass: ['#f3e6bd'],
+  grass1: ['#8fb456'], grass2: ['#6c9443'], grass3: ['#aac96d'], grassDk: ['#557a37'],
+  umbA: ['#ef5d5d'], umbB: ['#ffffff'], umbC: ['#ffb84d'], umbD: ['#3ca6cf'], umbE: ['#7ac276'], pole: ['#ece6da'],
+  towel1: ['#5bb6d6'], towel2: ['#ffcf5c'], towel3: ['#f28fa6'],
+  sail1: ['#ffffff'], sail2: ['#f7e8cf'], sail3: ['#ffd166'], sail4: ['#ff8f7e'], hull1: ['#2e4b6d'], hull2: ['#eef1f4'], hull3: ['#c95b4b'],
+  trunk: ['#a97b50'], trunkDk: ['#87603c'], palm1: ['#4f9b53'], palm2: ['#3b8046'], coco: ['#7a5230'],
+  lgWood: ['#d9b27c'], lgRed: ['#e05b50'], shell: ['#f8e6da'], shellDk: ['#e2b9a4'], pebble: ['#c2ad91'], starfish: ['#ef8f5d'], track: ['#d7b47b'], crab: ['#e4603f'], crabDk: ['#b4452a'], crabLt: ['#f6a27c'],
+  gull: ['#59616e'],
+  // ---- the rider and the bicycle (stay a little brighter at night) ----
+  ol: ['#272b36', 0, 0, 1], frame: ['#4bbfab', 0, 0, 1], frameHi: ['#a5eadc', 0, 0, 1], frameDk: ['#2f9785', 0, 0, 1],
+  cream: ['#f6eed9', 0, 0, 1], creamDk: ['#d8c9a5', 0, 0, 1], gold: ['#e3b54a', 0, 0, 1], amber: ['#ff9f2e', 0, 0, 1], redLamp: ['#e8473d', 0, 0, 1],
+  tire: ['#2e3037', 0, 0, 1], tread: ['#484b55', 0, 0, 1], gum: ['#dcc391', 0, 0, 1],
+  rim: ['#d9e0e7', 0, 0, 1], rimDk: ['#8b97a4', 0, 0, 1], hi: ['#ffffff', 0, 0, 1],
+  spoke: ['#c6cfd8', 0, 0, 1], spokeDk: ['#8e99a6', 0, 0, 1], chrome: ['#d3dae2', 0, 0, 1], chromeDk: ['#8a96a2', 0, 0, 1],
+  chain: ['#4b515b', 0, 0, 1], chainHi: ['#a3abb5', 0, 0, 1], leather: ['#7c4b2c', 0, 0, 1], leatherHi: ['#a96a40', 0, 0, 1], rubber: ['#33353c', 0, 0, 1],
+  wicker: ['#c98f4f', 0, 0, 1], wickerDk: ['#93602f', 0, 0, 1], wickerHi: ['#e9b878', 0, 0, 1],
+  fish: ['#86a8c2', 0, 0, 1], fishDk: ['#557995', 0, 0, 1], fishLt: ['#e1ecf3', 0, 0, 1],
+  white: ['#fdfdfb', 0, 0, 1], whiteSh: ['#e2e8ef', 0, 0, 1], whiteSh2: ['#c7d1dc', 0, 0, 1], wingGrey: ['#b9c4d0', 0, 0, 1],
+  black: ['#2b2e36', 0, 0, 1], blackHi: ['#555b68', 0, 0, 1],
+  bill: ['#f7b23f', 0, 0, 1], billHi: ['#ffd877', 0, 0, 1], billDk: ['#e39a36', 0, 0, 1], nail: ['#e0663a', 0, 0, 1],
+  pouch: ['#f6a663', 0, 0, 1], pouchDk: ['#de8547', 0, 0, 1], mouth: ['#c8674f', 0, 0, 1],
+  skin: ['#fbcaa2', 0, 0, 1], breast: ['#ffe2a6', 0, 0, 1], blush: ['#ff8e8e', 0, 0, 1], leg: ['#f49b48', 0, 0, 1], legDk: ['#cf7a34', 0, 0, 1], legFar: ['#d4843c', 0, 0, 1],
+  eye: ['#ffffff', 0, 0, 1], pupil: ['#1d212b', 0, 0, 1],
+  scarf: ['#e5383b', 0, 0, 1], scarfDk: ['#b4262d', 0, 0, 1], scarfSt: ['#ffd35a', 0, 0, 1],
+};
+const TINT = {
+  dusk: { mul: [0.97, 0.8, 0.76], add: [0.035, 0, 0.03] }, duskFg: { mul: [1, 0.88, 0.84], add: [0.02, 0, 0.01] },
+  night: { mul: [0.24, 0.29, 0.5], add: [0.018, 0.024, 0.06] }, nightFg: { mul: [0.5, 0.58, 0.72], add: [0.025, 0.03, 0.06] },
+};
+const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
+const rgbHex = c => '#' + c.map(v => Math.round(clamp(v, 0, 1) * 255).toString(16).padStart(2, '0')).join('');
+const THEME = {};
+{
+  let css = '';
+  for (const k in PAL) {
+    const [d, du, ni, fg] = PAL[k], day = hexRgb(d);
+    const tint = T => day.map((v, i) => v * T.mul[i] + T.add[i]);
+    THEME[k] = [day, du ? hexRgb(du) : tint(fg ? TINT.duskFg : TINT.dusk), ni ? hexRgb(ni) : tint(fg ? TINT.nightFg : TINT.night)];
+    css += `.f-${k}{fill:var(--${k})}.s-${k}{stroke:var(--${k})}.st-${k}{stop-color:var(--${k})}`;
+  }
+  const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
+}
+let themeK = -1;
+function applyTheme(k) {
+  if (Math.abs(k - themeK) < 0.0015) return;
+  themeK = k;
+  const st = svg.style;
+  for (const key in THEME) {
+    const [a, b, c] = THEME[key];
+    const t = k <= 0.5 ? k / 0.5 : (k - 0.5) / 0.5, x = k <= 0.5 ? a : b, y = k <= 0.5 ? b : c;
+    st.setProperty('--' + key, rgbHex([lerp(x[0], y[0], t), lerp(x[1], y[1], t), lerp(x[2], y[2], t)]));
+  }
+  st.setProperty('--lampK', r2(smooth(0.36, 0.78, k)));
+  st.setProperty('--starK', r2(smooth(0.62, 0.95, k)));
+  document.body.style.background = st.getPropertyValue('--skyMid');
+}
+
+/* =========================================================================
+   world + rig geometry (bike-local units; ground at y = 0, +y is down)
+   ========================================================================= */
+const HORIZON = -255, SHORE = -112, BW_FAR = -24, BW_NEAR = 16, FASCIA = 38;
+const BASE_V = 900, UNIT_M = 0.0034;           // 900 u/s ≈ 11 km/h at the bicycle's scale
+const WHEEL_R = 98, RA = [-160, -98], FA = [160, -98], BB = [-30, -80];
+const CRANK = 38, RING_R = 23, COG_R = 13;
+const ST = [-78.8, -230.3], SPT = [-92.4, -272], HTT = [98, -242], HTB = [111.6, -200.2];
+const TTF = [99.9, -236.3], DTF = [109.4, -206.8], SSS = [-77.3, -225.5], CROWN = [114.1, -192.6];
+const WRIST = [38, -306], LAMP = [222, -258], BELL = [88, -296];
+const BODY_O = [-92, -288], HEAD_REST = [150, -200];
+const HIP_N = [18, -14], HIP_F = [26, -19], SHOULDER = [50, -96];
+const NECK_B = [96, -90], NECK_B1 = [104, -134], NECK_H = [-3, 15], NECK_H1 = [-2, 50];
+const THIGH = 122, SHIN = 132, WING_L = 115;
+const PEDAL_IN_FOOT = [12, 21];
+const CRANK_W_NOM = BASE_V / WHEEL_R * (COG_R / RING_R);
+
+const view = { x0: -720, y0: -620, W: 1600, H: 900 };
+
+/* =========================================================================
+   static art (path data)
+   ========================================================================= */
+const ART = {
+  body: 'M74,-112C44,-126 18,-130 -8,-128C-60,-124 -104,-110 -128,-88C-146,-70 -142,-44 -120,-26C-92,-4 -52,6 -10,6C40,6 96,-6 126,-28C146,-44 146,-72 126,-92C112,-104 92,-110 74,-112Z',
+  tail: 'M-120,-94C-136,-104 -156,-112 -176,-112L-168,-102C-178,-100 -186,-94 -186,-86L-174,-82C-180,-76 -180,-68 -172,-62C-156,-58 -138,-56 -124,-56Z',
+  bellyShade: 'M-140,-60C-118,-14 -50,8 -10,8C44,8 104,-6 140,-44C112,-26 54,-12 -8,-14C-62,-16 -108,-32 -140,-60Z',
+  backShade: 'M-128,-92C-100,-112 -50,-124 -2,-126C-40,-118 -90,-104 -116,-84Z',
+  head: 'M-26,10C-32,-6 -24,-26 -4,-30C12,-33 26,-26 32,-16C36,-10 38,-4 38,4C36,14 26,22 10,24C-6,26 -20,22 -26,10Z',
+  crest1: 'M-24,-18C-33,-22 -44,-22 -53,-17C-44,-14 -35,-11 -27,-9Z',
+  crest2: 'M-27,-8C-35,-9 -45,-6 -51,1C-42,1 -34,0 -27,-1Z',
+  upperBill: 'M25,-17C70,-12 130,4 184,26C192,29 196,35 193,42C191,46 186,46 184,42C180,38 178,36 172,35C124,24 76,12 36,9C33,0 30,-8 25,-17Z',
+  billRidge: 'M42,-11C90,-4 140,10 180,27',
+  nostril: 'M52,-3C64,-1 74,1 86,5',
+  nail: 'M180,30C188,31 194,35 193,42C191,46 186,46 184,42C181,38 178,36 174,35Z',
+  lowerBill: 'M34,9C76,13 124,24 172,36C178,38 180,42 176,45C128,38 80,28 38,22C34,20 32,14 34,9Z',
+  skinPatch: 'M-2,-8C-2,-22 16,-26 26,-18C32,-12 32,0 24,4C12,8 -2,4 -2,-8Z',
+  smile: 'M36,9C30,10 26,8 23,4',
+  wing: 'M-28,4C-30,-14 -12,-26 8,-25C44,-22 82,-14 112,-9C120,-8 124,-1 119,5C110,10 100,13 92,14L84,27C80,22 74,19 69,19L61,34C57,28 51,25 46,24L38,39C34,33 28,30 23,29L15,42C11,36 5,32 -1,31L-9,39C-15,33 -22,26 -26,18C-30,12 -30,8 -28,4Z',
+  wingGrey: 'M-28,4C-30,-14 -12,-26 8,-25C44,-22 82,-14 112,-9C120,-8 124,-1 119,5C100,12 70,18 40,21C16,23 -10,22 -24,16C-28,12 -29,8 -28,4Z',
+  wingWhite: 'M-28,4C-30,-14 -12,-26 8,-25C44,-22 82,-14 112,-9C117,-8 119,-4 116,-1C96,3 70,8 42,11C16,13 -10,12 -22,9C-27,8 -29,6 -28,4Z',
+  wingLines: 'M89,16L84,25M66,20L61,32M43,23L38,37M20,25L15,40M-3,24L-8,37',
+  wingScallop: 'M2,2q7,5 14,0M24,1q7,5 14,0M46,-1q7,5 14,0M68,-4q7,5 14,0M-16,1q6,5 12,0',
+  finger1: 'M33,-313C46,-318 61,-313 67,-302C71,-295 69,-287 62,-284C61,-291 58,-298 52,-302C46,-305 40,-306 33,-306Z',
+  finger2: 'M29,-306C42,-309 54,-305 58,-296C61,-289 58,-283 52,-281C51,-287 49,-293 44,-296C39,-299 34,-300 29,-300Z',
+  finger3: 'M27,-300C38,-301 46,-296 49,-290C51,-284 48,-280 43,-279C42,-284 40,-288 36,-290C32,-292 29,-293 27,-293Z',
+  foot: 'M-4,-5C-9,3 -9,12 -3,16C6,18 22,18 34,18C40,18 46,17 49,14C50,12 48,10 45,10C42,8 39,9 36,8C32,6 29,7 26,6C18,3 10,-1 6,-5C3,-8 -2,-8 -4,-5Z',
+  claws: 'M47.5,11.5q2.6,1 2.6,3.6M41,9.2q2.2,1.3 2,3.8M34.4,8.2q2,1.4 1.6,3.8',
+  toes: 'M6,4Q22,10 44,11.5M5,1.5Q19,5.5 37,8.5M8,-1Q18,2 29,6.5',
+  crankArm: 'M0,-5.2C12,-4.6 28,-3.8 38,-3.4A3.4,3.4 0 0 1 38,3.4C28,3.8 12,4.6 0,5.2A5.2,5.2 0 0 1 0,-5.2Z',
+  saddle: 'M-58,-283C-72,-290 -102,-294 -127,-295C-138,-295 -142,-289 -140,-283C-131,-279 -103,-278 -84,-279C-72,-280 -63,-280 -58,-283Z',
+  fish: 'M19,0C13,-9 -4,-10.5 -13,-3.5L-21,-10C-19.5,-4 -19.5,4 -21,10L-13,3.5C-4,10.5 13,9 19,0Z',
+  fishBelly: 'M17,1.5C10,7 -3,8 -12,3C-4,4.5 8,4.5 17,1.5Z',
+  fishFin: 'M-2,-8.6C2,-13.5 8,-12.5 9,-7.6Z',
+  sparkle: 'M0,-9Q1.5,-1.5 9,0Q1.5,1.5 0,9Q-1.5,1.5 -9,0Q-1.5,-1.5 0,-9Z',
+  basket: 'M116,-312L206,-312L199,-246Q198,-240 192,-240L130,-240Q124,-240 123,-246Z',
+};
+function fishSVG(extra = '') {
+  return `<g ${extra}><path d="${ART.fish}" class="f-fish s-ol" stroke-width="1.6" stroke-linejoin="round"/><path d="${ART.fishBelly}" class="f-fishLt"/><path d="${ART.fishFin}" class="f-fishDk s-ol" stroke-width="1.2"/><path d="M6,-5.5Q8.5,0 6,5.5" class="s-fishDk" stroke-width="1.1" fill="none"/><circle cx="11" cy="-1.6" r="1.9" class="f-pupil"/><circle cx="11.6" cy="-2.2" r=".6" class="f-eye"/></g>`;
+}
+function gearPath(rRoot, rTip, n) {
+  let d = '';
+  for (let i = 0; i < n; i++) {
+    const a = i / n * TAU, w = TAU / n;
+    for (const [r, t] of [[rRoot, a], [rTip, a + w * .24], [rTip, a + w * .5], [rRoot, a + w * .74]]) d += (d ? 'L' : 'M') + r2(r * Math.cos(t)) + ',' + r2(r * Math.sin(t));
+  }
+  return d + 'Z';
+}
+const circ = r => `M${r},0A${r},${r} 0 1 0 ${-r},0A${r},${r} 0 1 0 ${r},0Z`;
+function arc(c, r, a1, a2) { const p1 = dir(a1, r, c), p2 = dir(a2, r, c); return `M${P(p1)}A${r},${r} 0 ${(a2 - a1) > 180 ? 1 : 0} 1 ${P(p2)}`; }
+
+/* chain loop: external tangents between chainring (BB) and cog (RA) */
+const CHAIN = (() => {
+  const dx = RA[0] - BB[0], dy = RA[1] - BB[1], d = Math.hypot(dx, dy), th = Math.atan2(dy, dx), al = Math.acos((RING_R - COG_R) / d);
+  const top = th + al, bot = th - al;
+  const t1 = [BB[0] + RING_R * Math.cos(top), BB[1] + RING_R * Math.sin(top)], t2 = [RA[0] + COG_R * Math.cos(top), RA[1] + COG_R * Math.sin(top)];
+  const b1 = [BB[0] + RING_R * Math.cos(bot), BB[1] + RING_R * Math.sin(bot)], b2 = [RA[0] + COG_R * Math.cos(bot), RA[1] + COG_R * Math.sin(bot)];
+  const ringSweep = mod(bot - top, TAU), cogSweep = mod(top - bot, TAU);
+  const dPath = `M${P(t2)}L${P(t1)}A${RING_R},${RING_R} 0 ${ringSweep > Math.PI ? 1 : 0} 1 ${P(b1)}L${P(b2)}A${COG_R},${COG_R} 0 ${cogSweep > Math.PI ? 1 : 0} 1 ${P(t2)}Z`;
+  const len = Math.hypot(t1[0] - t2[0], t1[1] - t2[1]) * 2 + RING_R * ringSweep + COG_R * cogSweep;
+  const n = Math.round(len / 5.2), per = len / n;
+  return { d: dPath, per, dash: `${r2(per * 0.46)} ${r2(per * 0.54)}` };
+})();
+
+/* =========================================================================
+   scene skeleton
+   ========================================================================= */
+function wheelSVG(id, c, front) {
+  const N = 24, rh = 6.4, rim = 82.6;
+  let near = '', far = '';
+  for (let i = 0; i < N; i++) {
+    const a = i / N * TAU, isNear = i % 2 === 0, k = (i >> 1) & 1;
+    const lean = (k ? 1 : -1) * (isNear ? 1 : -1) * 0.5;
+    const s = `M${r2(rh * Math.cos(a))},${r2(rh * Math.sin(a))}L${r2(rim * Math.cos(a + lean))},${r2(rim * Math.sin(a + lean))}`;
+    if (isNear) near += s; else far += s;
+  }
+  const per = TAU * 97 / 84;
+  return `<g id="${id}" transform="translate(${c[0]},${c[1]})">
+    <circle r="93.7" fill="none" class="s-tire" stroke-width="9.6"/>
+    <g class="wrot"><circle r="97.2" fill="none" class="s-tread" stroke-width="2" stroke-dasharray="${r2(per * .42)} ${r2(per * .58)}"/></g>
+    <circle r="98.6" fill="none" class="s-ol" stroke-width="1.3" opacity=".7"/>
+    <circle r="89" fill="none" class="s-gum" stroke-width="2.2"/>
+    <circle r="85.2" fill="none" class="s-rim" stroke-width="5.4"/>
+    <circle r="82.3" fill="none" class="s-rimDk" stroke-width="1"/>
+    <path d="M-72,-46A85.2,85.2 0 0 1 -12,-84.4" fill="none" class="s-hi" stroke-width="1.8" stroke-linecap="round" opacity=".85"/>
+    <path d="M-80,-38A93.7,93.7 0 0 1 -30,-89" fill="none" class="s-tread" stroke-width="2.4" stroke-linecap="round" opacity=".9"/>
+    <circle r="78" class="f-spokeDk blurDisc" opacity="0"/>
+    <g class="spkBlur" opacity="0"><use href="#${id}Spk" opacity=".55"/><use href="#${id}Spk" opacity=".38"/><use href="#${id}Spk" opacity=".24"/></g>
+    <g class="spk"><g id="${id}Spk"><path d="${far}" fill="none" class="s-spokeDk" stroke-width="1.15"/><path d="${near}" fill="none" class="s-spoke" stroke-width="1.3"/></g></g>
+    <g class="wrot">
+      <rect x="-1.7" y="-88.5" width="3.4" height="6.5" rx="1" class="f-chromeDk"/>
+      ${front ? '<rect x="40" y="-4" width="16" height="8" rx="2.5" class="f-amber s-ol" stroke-width="1.1"/><rect x="42.5" y="-2" width="11" height="2" rx="1" class="f-hi" opacity=".55"/>' : ''}
+    </g>
+    <circle r="12.2" class="f-chromeDk s-ol" stroke-width="1.6"/>
+    <circle r="8" class="f-chrome"/>
+    <circle r="3" class="f-chromeDk"/>
+    <path d="M-5.5,-4.5A7,7 0 0 1 3.5,-6.2" class="s-hi" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+  </g>`;
+}
+
+function frameSVG() {
+  const tubes = [[BB, RA, 6.2], [SSS, RA, 5.6], [BB, ST, 9.4], [ST, TTF, 8.6], [BB, DTF, 10.8], [HTT, HTB, 12.6]];
+  const fork = `M${P(HTB)}L${P(CROWN)}L128,-150Q136,-118 ${P(FA)}`;
+  let ol = '', fi = '', hi = '';
+  for (const [a, b, w] of tubes) {
+    const d = `M${P(a)}L${P(b)}`;
+    ol += `<path d="${d}" stroke-width="${w + 5}"/>`;
+    fi += `<path d="${d}" stroke-width="${w}"/>`;
+    const L = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L, ins = Math.min(10, L * .2);
+    hi += `<path d="M${P([a[0] + ux * ins, a[1] + uy * ins])}L${P([b[0] - ux * ins, b[1] - uy * ins])}" stroke-width="${r2(w * .26)}"/>`;
+  }
+  ol += `<path d="${fork}" stroke-width="12.5"/>`; fi += `<path d="${fork}" stroke-width="7.5"/>`;
+  hi += `<path d="M118,-180L127,-152Q133,-128 146,-110" stroke-width="1.8"/>`;
+  const dots = [[BB, 10], [ST, 7], [RA, 6], [FA, 5.5], [CROWN, 7.5], [[HTT[0] + 1, HTT[1] + 4], 7.2], [[HTB[0] - .5, HTB[1] - 3], 7.6]];
+  let dO = '', dF = '';
+  for (const [c, r] of dots) { dO += `<circle cx="${c[0]}" cy="${c[1]}" r="${r + 2.5}"/>`; dF += `<circle cx="${c[0]}" cy="${c[1]}" r="${r}"/>`; }
+  const dtAng = Math.atan2(DTF[1] - BB[1], DTF[0] - BB[0]) / DEG, dtMid = [(BB[0] + DTF[0]) / 2 + 2, (BB[1] + DTF[1]) / 2 + 2];
+  const htMid = [(HTT[0] + HTB[0]) / 2, (HTT[1] + HTB[1]) / 2], htAng = Math.atan2(HTB[1] - HTT[1], HTB[0] - HTT[0]) / DEG;
+  return `
+    <g class="s-ol f-ol" fill="none" stroke-linecap="round" stroke-linejoin="round">${ol}<g stroke="none">${dO}</g></g>
+    <g class="s-frame" fill="none" stroke-linecap="round" stroke-linejoin="round">${fi}<g class="f-frame" stroke="none">${dF}</g></g>
+    <g class="s-frameHi" fill="none" stroke-linecap="round" opacity=".9">${hi}</g>
+    <text class="decal f-cream" x="0" y="0" text-anchor="middle" dominant-baseline="central" transform="translate(${P(dtMid)}) rotate(${r2(dtAng)})">鹈 鹕 牌</text>
+    <g transform="translate(${P(htMid)}) rotate(${r2(htAng - 90)})"><ellipse rx="4.2" ry="8" class="f-gold s-ol" stroke-width="1.2"/><path d="M-1.6,-3.2Q1.8,-1 -.4,3" class="s-ol" stroke-width=".9" fill="none"/></g>
+    <circle cx="${BB[0]}" cy="${BB[1]}" r="4" class="f-frameDk"/>`;
+}
+
+function basketSVG() {
+  let weave = '', stakes = '';
+  for (let y = -304, row = 0; y <= -246; y += 7.6, row++) {
+    let d = `M112,${r2(y)}`;
+    for (let x = 112; x < 210; x += 8) d += `q4,${row % 2 ? -2.6 : 2.6} 8,0`;
+    weave += d;
+  }
+  for (let x = 122; x < 206; x += 10.5) stakes += `M${x},-312L${r2(x + (x - 161) * -.08)},-240`;
+  return `
+    <path d="M128,-242L157,-108M196,-242L163,-108" class="s-ol" stroke-width="4.6" fill="none" stroke-linecap="round"/>
+    <path d="M128,-242L157,-108M196,-242L163,-108" class="s-chrome" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <g transform="translate(142,-314) rotate(-96)">${fishSVG()}</g>
+    <g id="basketFish">${fishSVG('transform="translate(172,-318) rotate(-66)"')}</g>
+    <g transform="translate(192,-312) rotate(-118) scale(.88)">${fishSVG()}</g>
+    <path d="${ART.basket}" class="f-wicker s-ol" stroke-width="2.6" stroke-linejoin="round"/>
+    <clipPath id="cpBasket"><path d="${ART.basket}"/></clipPath>
+    <g clip-path="url(#cpBasket)">
+      <path d="${stakes}" class="s-wickerDk" stroke-width="2.4" fill="none" opacity=".55"/>
+      <path d="${weave}" class="s-wickerDk" stroke-width="1.5" fill="none" opacity=".8"/>
+      <path d="${weave}" class="s-wickerHi" stroke-width=".9" fill="none" opacity=".7" transform="translate(0,-1.6)"/>
+      <path d="M118,-312L124,-240L134,-240L128,-312Z" class="f-wickerHi" opacity=".35"/>
+      <path d="M200,-312L194,-240L204,-240Z" class="f-wickerDk" opacity=".35"/>
+    </g>
+    <path d="M113,-312L209,-312" class="s-ol" stroke-width="10.5" stroke-linecap="round"/>
+    <path d="M113,-312L209,-312" class="s-wickerDk" stroke-width="6" stroke-linecap="round"/>
+    <path d="M113,-312L209,-312" class="s-wickerHi" stroke-width="2" stroke-dasharray="3.2 3.4" stroke-linecap="round" transform="translate(0,-.8)"/>
+    <path d="M200,-258L208,-258" class="s-ol" stroke-width="7" stroke-linecap="round"/>
+    <g id="lampBody">
+      <rect x="203" y="-268" width="18" height="20" rx="6" class="f-cream s-ol" stroke-width="2.2"/>
+      <path d="M206,-264.5L216,-264.5" class="s-hi" stroke-width="1.6" stroke-linecap="round" opacity=".8"/>
+      <ellipse cx="221" cy="-258" rx="4" ry="10.5" class="f-chrome s-ol" stroke-width="2"/>
+      <ellipse cx="222.2" cy="-258" rx="2" ry="7.6" class="f-glass"/>
+      <ellipse cx="222.2" cy="-258" rx="2.4" ry="8" fill="#fff6d2" class="lampK"/>
+    </g>`;
+}
+
+function bikeFrontSVG() {   // seat post, saddle, stem, handlebar, bell
+  return `
+    <path d="M${P(ST)}L${P(SPT)}" class="s-ol" stroke-width="11" stroke-linecap="round"/>
+    <path d="M${P(ST)}L${P(SPT)}" class="s-chrome" stroke-width="6.5" stroke-linecap="round"/>
+    <path d="M-128,-279l6,2l-6,2l6,2l-6,2l6,2l-6,2l6,2M-111,-279l6,2l-6,2l6,2l-6,2l6,2l-6,2l6,2" class="s-chromeDk" stroke-width="1.8" fill="none" stroke-linejoin="round"/>
+    <path d="M-125,-265L-92,-273L-64,-281" class="s-ol" stroke-width="4.6" fill="none" stroke-linecap="round"/>
+    <path d="M-125,-265L-92,-273L-64,-281" class="s-chrome" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <path d="${ART.saddle}" class="f-leather s-ol" stroke-width="2.4" stroke-linejoin="round"/>
+    <path d="M-70,-287C-90,-291 -110,-292 -128,-292" class="s-leatherHi" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+    <circle cx="-135" cy="-286" r="1.3" class="f-chrome"/><circle cx="-130" cy="-283" r="1.3" class="f-chrome"/>
+    <path d="M98,-242L93.4,-257L112,-264M112,-264C112,-280 100,-292 80,-293L70,-293" class="s-ol" stroke-width="11" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M98,-242L93.4,-257L112,-264" class="s-chrome" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M112,-264C112,-280 100,-292 80,-293L70,-293" class="s-chrome" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <path d="M110,-270C107,-282 98,-289 82,-290" class="s-hi" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".8"/>
+    <circle cx="112" cy="-264" r="5.6" class="f-chrome s-ol" stroke-width="2"/>
+    <g id="bell" class="hit">
+      <path d="M86,-293L86,-297" class="s-chromeDk" stroke-width="3"/>
+      <path d="M78,-297C78,-309 98,-309 98,-297Z" class="f-chrome s-ol" stroke-width="2"/>
+      <path d="M82,-302C84,-306 88,-307 91,-306" class="s-hi" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <circle cx="88" cy="-309" r="2" class="f-chromeDk s-ol" stroke-width="1"/>
+      <path d="M98,-298L104,-301" class="s-ol" stroke-width="4" stroke-linecap="round"/>
+      <path d="M98,-298L104,-301" class="s-chromeDk" stroke-width="2" stroke-linecap="round"/>
+      <rect x="70" y="-320" width="40" height="30" fill="transparent"/>
+    </g>
+    <path d="M72,-293L46,-291" class="s-ol" stroke-width="15" stroke-linecap="round"/>
+    <path d="M72,-293L46,-291" class="s-leather" stroke-width="10" stroke-linecap="round"/>
+    <path d="M70,-296L48,-294.5" class="s-leatherHi" stroke-width="1.8" stroke-linecap="round"/>`;
+}
+
+function fendersSVG() {
+  const rear = arc(RA, 106, 160, 296), front = arc(FA, 106, 198, 338);
+  const rs = dir(168, 106, RA), fs = dir(330, 106, FA);
+  const rl = dir(196, 107, RA);
+  return `
+    <path d="M${P(rs)}L${P(RA)}M${P(fs)}L${P(FA)}" class="s-chromeDk" stroke-width="2" fill="none"/>
+    <path d="${rear}" class="s-ol" stroke-width="12" fill="none" stroke-linecap="round"/>
+    <path d="${rear}" class="s-cream" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="${arc(RA, 103.4, 166, 290)}" class="s-creamDk" stroke-width="1.6" fill="none"/>
+    <path d="${front}" class="s-ol" stroke-width="12" fill="none" stroke-linecap="round"/>
+    <path d="${front}" class="s-cream" stroke-width="7" fill="none" stroke-linecap="round"/>
+    <path d="${arc(FA, 103.4, 204, 332)}" class="s-creamDk" stroke-width="1.6" fill="none"/>
+    <g transform="translate(${P(rl)}) rotate(${196 + 90})"><rect x="-6" y="-3.6" width="12" height="7.2" rx="2.4" class="f-redLamp s-ol" stroke-width="1.4"/><rect x="-4" y="-2" width="7" height="1.6" rx=".8" class="f-hi" opacity=".5"/></g>
+    <circle id="rearGlow" cx="${r2(rl[0])}" cy="${r2(rl[1])}" r="26" fill="url(#gRed)" class="lampK"/>`;
+}
+
+function drivetrainSVG() {
+  let spider = '';
+  for (let i = 0; i < 5; i++) { const a = i / 5 * TAU - Math.PI / 2; spider += `M${r2(4 * Math.cos(a - .5))},${r2(4 * Math.sin(a - .5))}L${r2(16 * Math.cos(a - .14))},${r2(16 * Math.sin(a - .14))}L${r2(16 * Math.cos(a + .14))},${r2(16 * Math.sin(a + .14))}L${r2(4 * Math.cos(a + .5))},${r2(4 * Math.sin(a + .5))}Z`; }
+  let bolts = '';
+  for (let i = 0; i < 5; i++) { const a = i / 5 * TAU - Math.PI / 2; bolts += `<circle cx="${r2(16.6 * Math.cos(a))}" cy="${r2(16.6 * Math.sin(a))}" r="1.5"/>`; }
+  return `
+    <g id="cog" transform="translate(${P(RA)})"><path d="${gearPath(11.4, 13.8, 16)}${circ(6.5)}" fill-rule="evenodd" class="f-chromeDk s-ol" stroke-width="1.2"/><circle r="6.5" class="f-chrome s-ol" stroke-width="1"/></g>
+    <g id="ring" transform="translate(${P(BB)})">
+      <path d="${gearPath(21.8, 24.6, 32)}${circ(17.6)}" fill-rule="evenodd" class="f-chrome s-ol" stroke-width="1.4"/>
+      <path d="${spider}" class="f-chrome s-ol" stroke-width="1.2"/>
+      <g class="f-chromeDk">${bolts}</g>
+    </g>
+    <path d="${CHAIN.d}" class="s-ol" stroke-width="4.8" fill="none" stroke-linejoin="round"/>
+    <path d="${CHAIN.d}" class="s-chain" stroke-width="3" fill="none" stroke-linejoin="round"/>
+    <path id="chainLinks" d="${CHAIN.d}" class="s-chainHi" stroke-width="1.5" fill="none" stroke-dasharray="${CHAIN.dash}"/>`;
+}
+
+function pedalSVG(id, far) {
+  return `<g id="${id}"><rect x="-15" y="-4.6" width="30" height="9.2" rx="2.6" class="${far ? 'f-tire' : 'f-rubber'} s-ol" stroke-width="1.8"/><rect x="-13" y="-1.1" width="26" height="2.2" class="f-chromeDk"/><circle r="2.3" class="f-chrome"/></g>`;
+}
+
+function crabSVG() {
+  let legs = '';
+  for (const sx of [-1, 1]) for (let i = 0; i < 3; i++) {
+    const ax = sx * (11 + i * 2.5), ay = -5 - i * 0.8;
+    legs += `<path class="crabLeg s-crabDk" data-side="${sx}" data-i="${i}" data-ax="${ax}" data-ay="${ay}" d="M${ax},${ay}L${sx * (19 + i * 3.4)},${-12 + i * 1.6}L${sx * (22 + i * 4.2)},0" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  const claw = `<path d="M-14,-11L-23,-17" class="s-ol" stroke-width="6.4" stroke-linecap="round"/><path d="M-14,-11L-23,-17" class="s-crab" stroke-width="4" stroke-linecap="round"/>
+    <path d="M-23,-16C-31,-15 -35,-23 -31,-29L-28,-24L-27,-31C-22,-29 -20,-22 -23,-16Z" class="f-crab s-ol" stroke-width="1.5" stroke-linejoin="round"/>`;
+  return `<ellipse cx="0" cy="1" rx="24" ry="3.4" class="f-seam" opacity=".4"/>${legs}
+    <g class="clawL">${claw}</g><g class="clawR"><g transform="scale(-1,1)">${claw}</g></g>
+    <path d="M-4,-15L-6,-25M4,-15L6,-25" class="s-crabDk" stroke-width="2.2" stroke-linecap="round"/>
+    <path d="M-16,-6C-17,-19 17,-19 16,-6C14,-2 -14,-2 -16,-6Z" class="f-crab s-ol" stroke-width="1.6"/>
+    <path d="M-9,-13Q0,-17 9,-13" class="s-crabLt" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M-3,-8.5Q0,-6 3,-8.5" class="s-ol" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+    <circle cx="-6" cy="-26.5" r="3.4" class="f-eye s-ol" stroke-width="1.2"/><circle cx="6" cy="-26.5" r="3.4" class="f-eye s-ol" stroke-width="1.2"/>
+    <g class="crabPupils f-pupil"><circle cx="-6" cy="-26.4" r="1.6"/><circle cx="6" cy="-26.4" r="1.6"/></g>
+    <g class="crabBang" opacity="0"><circle cx="0" cy="-50" r="10" class="f-eye s-ol" stroke-width="1.6"/><path d="M-1.9,-57L1.9,-57L1.1,-47.5L-1.1,-47.5Z" class="f-redLamp"/><circle cx="0" cy="-44" r="1.8" class="f-redLamp"/></g>`;
+}
+
+function rigSVG() {
+  return `
+  <g id="farLegG">
+    <line id="farThighO" class="s-ol" stroke-width="15" stroke-linecap="round"/>
+    <line id="farShinO" class="s-ol" stroke-width="13" stroke-linecap="round"/>
+    <line id="farThigh" class="s-legFar" stroke-width="10" stroke-linecap="round"/>
+    <line id="farShin" class="s-legFar" stroke-width="8" stroke-linecap="round"/>
+    <g id="farFoot"><path d="${ART.foot}" class="f-legFar s-ol" stroke-width="2.4" stroke-linejoin="round"/><path d="${ART.toes}" class="s-legDk" stroke-width="1.4" fill="none" stroke-linecap="round"/></g>
+  </g>
+  <g id="farCrank"><path d="${ART.crankArm}" class="f-chromeDk s-ol" stroke-width="2"/></g>
+  ${pedalSVG('farPedal', true)}
+  ${wheelSVG('wR', RA, false)}
+  ${wheelSVG('wF', FA, true)}
+  <path d="M-58,-83L-122,-91" class="s-ol" stroke-width="7" stroke-linecap="round"/>
+  <path d="M-58,-83L-122,-91" class="s-chromeDk" stroke-width="3.6" stroke-linecap="round"/>
+  ${frameSVG()}
+  ${fendersSVG()}
+  ${bikeFrontSVG()}
+  <g id="basketG" class="hit">${basketSVG()}</g>
+  ${drivetrainSVG()}
+  <g id="nearCrank"><path d="${ART.crankArm}" class="f-chrome s-ol" stroke-width="2"/><path d="M4,-2.4L34,-1.6" class="s-hi" stroke-width="1.4" stroke-linecap="round" opacity=".8"/></g>
+  <circle cx="${BB[0]}" cy="${BB[1]}" r="5" class="f-chrome s-ol" stroke-width="1.6"/>
+  ${pedalSVG('nearPedal', false)}
+  <g id="nearLegG">
+    <line id="nearThighO" class="s-ol" stroke-width="16.5" stroke-linecap="round"/>
+    <line id="nearShinO" class="s-ol" stroke-width="14" stroke-linecap="round"/>
+    <line id="nearThigh" class="s-leg" stroke-width="11.5" stroke-linecap="round"/>
+    <line id="nearShin" class="s-leg" stroke-width="9" stroke-linecap="round"/>
+    <line id="nearShinHi" class="s-legDk" stroke-width="2.4" stroke-linecap="round" opacity=".55"/>
+    <g id="nearFoot"><path d="${ART.foot}" class="f-leg s-ol" stroke-width="2.4" stroke-linejoin="round"/><path d="${ART.toes}" class="s-legDk" stroke-width="1.4" fill="none" stroke-linecap="round"/><path d="${ART.claws}" class="s-ol" stroke-width="1.5" fill="none" stroke-linecap="round"/></g>
+  </g>
+  <g id="pelican" class="hit">
+    <g id="unionOl" class="f-ol s-ol" stroke-width="6" stroke-linejoin="round"><use href="#uBody"/><use href="#uThigh"/><use href="#uNeck"/><use href="#uHead"/></g>
+    <g id="unionFill" stroke="none"><use href="#uBody" fill="url(#gBody)"/><use href="#uThigh" class="f-white"/><use href="#uNeck" class="f-white"/><use href="#uHead" class="f-white"/></g>
+    <g id="bodyShade" clip-path="url(#cpBody)">
+      <ellipse cx="112" cy="-58" rx="44" ry="38" fill="url(#gBreast)"/>
+      <path d="${ART.bellyShade}" class="f-whiteSh" opacity=".9"/>
+      <path d="${ART.backShade}" class="f-whiteSh" opacity=".7"/>
+      <path d="M-60,-40q8,6 16,0M-40,-30q8,6 16,0M-80,-52q8,6 16,0M-20,-44q8,6 16,0M0,-30q8,6 16,0" class="s-whiteSh2" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".8"/>
+    </g>
+    <path id="thighFluff" class="s-whiteSh2" stroke-width="1.4" fill="none" stroke-linecap="round" opacity=".9"/>
+    <g id="wingArm">
+      <path d="${ART.wing}" class="f-black s-ol" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="${ART.wingGrey}" class="f-wingGrey"/>
+      <path d="${ART.wingWhite}" class="f-white"/>
+      <path d="${ART.wingLines}" class="s-blackHi" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+      <path d="${ART.wingScallop}" class="s-whiteSh2" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    </g>
+    <g id="hand">
+      <path d="${ART.finger3}" class="f-black s-ol" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="${ART.finger2}" class="f-black s-ol" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="${ART.finger1}" class="f-black s-ol" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M40,-310C50,-312 58,-308 62,-300M36,-303C44,-304 50,-301 53,-296" class="s-blackHi" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+    </g>
+    <g id="scarfG">
+      <path id="scarfB" class="f-scarfDk s-ol" stroke-width="2.4" stroke-linejoin="round"/>
+      <path id="scarfBSt" class="f-scarfSt"/>
+      <path id="scarfA" class="f-scarf s-ol" stroke-width="2.4" stroke-linejoin="round"/>
+      <path id="scarfASt" class="f-scarfSt"/>
+      <path id="scarfFr" class="s-scarfDk" fill="none" stroke-width="2" stroke-linecap="round"/>
+      <path id="scarfWrap" class="f-scarf s-ol" stroke-width="2.4" stroke-linejoin="round"/>
+      <path id="scarfWrapSh" class="s-scarfDk" fill="none" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+      <path id="scarfWrapSt" class="s-scarfSt" fill="none" stroke-width="2.6" stroke-linecap="round"/>
+      <path id="scarfKnot" class="f-scarf s-ol" stroke-width="2.2" stroke-linejoin="round"/>
+    </g>
+    <g id="headD">
+      <path d="${ART.skinPatch}" class="f-skin"/>
+      <path id="mouthIn" class="f-mouth"/>
+      <g id="jaw">
+        <path id="pouch" class="f-pouch s-ol" stroke-width="2.4" stroke-linejoin="round"/>
+        <path id="pouchLines" class="s-pouchDk" fill="none" stroke-width="1.3" stroke-linecap="round" opacity=".75"/>
+        <path d="${ART.lowerBill}" class="f-billDk s-ol" stroke-width="2.4" stroke-linejoin="round"/>
+      </g>
+      <path d="${ART.upperBill}" class="f-bill s-ol" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="${ART.billRidge}" class="s-billHi" stroke-width="3" fill="none" stroke-linecap="round" opacity=".9"/>
+      <path d="${ART.nail}" class="f-nail"/>
+      <path d="${ART.upperBill}" fill="none" class="s-ol" stroke-width="2.6" stroke-linejoin="round"/>
+      <path d="${ART.nostril}" class="s-billDk" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+      <path d="${ART.smile}" class="s-ol" stroke-width="2.1" fill="none" stroke-linecap="round"/>
+      <ellipse cx="7" cy="10" rx="7" ry="3.6" class="f-blush" opacity=".5"/>
+      <g id="eyeOpen">
+        <ellipse cx="12" cy="-9" rx="8.6" ry="9.6" class="f-eye s-ol" stroke-width="1.8"/>
+        <g id="pupil"><circle cx="13.6" cy="-8.4" r="5.1" class="f-pupil"/><circle cx="15.6" cy="-11" r="1.9" class="f-eye"/><circle cx="12" cy="-5.6" r=".9" class="f-eye"/></g>
+        <path id="lid" class="f-skin s-ol" stroke-width="1.6"/>
+      </g>
+      <path id="eyeHappy" d="M4.5,-7Q12,-17 19.5,-7" class="s-pupil" stroke-width="2.8" fill="none" stroke-linecap="round" opacity="0"/>
+    </g>
+  </g>
+  <g id="rigFx">
+    <g id="bellWaves" fill="none" stroke-linecap="round" opacity="0">
+      <g class="s-white" stroke-width="5"><path d="M0,-6Q4,0 0,6"/><path d="M5,-10Q11,0 5,10"/><path d="M10,-14Q18,0 10,14"/></g>
+      <g class="s-ol" stroke-width="2.2"><path d="M0,-6Q4,0 0,6"/><path d="M5,-10Q11,0 5,10"/><path d="M10,-14Q18,0 10,14"/></g>
+    </g>
+    <g id="flyFish" opacity="0"><g id="flyFishIn">${fishSVG()}</g></g>
+    <g id="sparkles" class="f-scarfSt" opacity="0"><path d="${ART.sparkle}"/><path d="${ART.sparkle}"/><path d="${ART.sparkle}"/></g>
+  </g>`;
+}
+
+svg.innerHTML = `
+<defs>
+  <linearGradient id="gSky" gradientUnits="userSpaceOnUse" x1="0" y1="-620" x2="0" y2="${HORIZON}"><stop offset="0" class="st-skyTop"/><stop offset=".62" class="st-skyMid"/><stop offset="1" class="st-skyHor"/></linearGradient>
+  <linearGradient id="gSea" gradientUnits="userSpaceOnUse" x1="0" y1="${HORIZON}" x2="0" y2="${SHORE}"><stop offset="0" class="st-seaFar"/><stop offset="1" class="st-seaNear"/></linearGradient>
+  <linearGradient id="gSand" gradientUnits="userSpaceOnUse" x1="0" y1="${SHORE}" x2="0" y2="${BW_FAR}"><stop offset="0" class="st-sandLt"/><stop offset="1" class="st-sand"/></linearGradient>
+  <linearGradient id="gWet" gradientUnits="userSpaceOnUse" x1="0" y1="${SHORE - 4}" x2="0" y2="${SHORE + 18}"><stop offset=".3" class="st-wetSand"/><stop offset="1" class="st-wetSand" stop-opacity="0"/></linearGradient>
+  <radialGradient id="gSunGlow"><stop offset="0" class="st-sunGlow" stop-opacity=".9"/><stop offset=".28" class="st-sunGlow" stop-opacity=".34"/><stop offset="1" class="st-sunGlow" stop-opacity="0"/></radialGradient>
+  <radialGradient id="gMoonGlow"><stop offset="0" stop-color="#e4ecff" stop-opacity=".42"/><stop offset="1" stop-color="#e4ecff" stop-opacity="0"/></radialGradient>
+  <radialGradient id="gGlow"><stop offset="0" stop-color="#fff4cc" stop-opacity=".95"/><stop offset=".2" stop-color="#ffd47e" stop-opacity=".5"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/></radialGradient>
+  <radialGradient id="gPool"><stop offset="0" stop-color="#ffd98f" stop-opacity=".5"/><stop offset="1" stop-color="#ffd98f" stop-opacity="0"/></radialGradient>
+  <radialGradient id="gRed"><stop offset="0" stop-color="#ff5a4f" stop-opacity=".85"/><stop offset="1" stop-color="#ff5a4f" stop-opacity="0"/></radialGradient>
+  <linearGradient id="gBeam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff2c4" stop-opacity=".5"/><stop offset="1" stop-color="#fff2c4" stop-opacity="0"/></linearGradient>
+  <linearGradient id="gLH" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff6d6" stop-opacity=".5"/><stop offset="1" stop-color="#fff6d6" stop-opacity="0"/></linearGradient>
+  <linearGradient id="gUnder" gradientUnits="userSpaceOnUse" x1="0" y1="${FASCIA}" x2="0" y2="150"><stop offset="0" stop-color="#2b1a0e" stop-opacity=".6"/><stop offset="1" stop-color="#2b1a0e" stop-opacity="0"/></linearGradient>
+  <radialGradient id="gShadow"><stop offset="0" stop-color="#24160b" stop-opacity=".4"/><stop offset=".55" stop-color="#24160b" stop-opacity=".16"/><stop offset="1" stop-color="#24160b" stop-opacity="0"/></radialGradient>
+  <radialGradient id="gVig" cx=".5" cy=".5" r=".75"><stop offset=".62" stop-color="#0a1830" stop-opacity="0"/><stop offset="1" stop-color="#0a1830" stop-opacity=".26"/></radialGradient>
+  <radialGradient id="gBreast"><stop offset="0" class="st-breast" stop-opacity=".75"/><stop offset="1" class="st-breast" stop-opacity="0"/></radialGradient>
+  <linearGradient id="gBody" x1="0" y1="0" x2="0" y2="1"><stop offset=".42" class="st-white"/><stop offset="1" class="st-whiteSh"/></linearGradient>
+  <linearGradient id="gStreak" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#ffffff" stop-opacity="0"/><stop offset=".55" stop-color="#ffffff" stop-opacity=".85"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient>
+  <path id="bodyP" d="${ART.body}"/>
+  <path id="tailP" d="${ART.tail}"/>
+  <path id="headP" d="${ART.head}"/>
+  <clipPath id="cpBody"><use href="#bodyP"/></clipPath>
+  <g id="uBody"><use href="#tailP"/><use href="#bodyP"/></g>
+  <path id="uThigh"/>
+  <path id="uNeck"/>
+  <g id="uHead"><use href="#headP"/><path id="crest1" d="${ART.crest1}"/><path id="crest2" d="${ART.crest2}"/></g>
+</defs>
+<rect x="-9000" y="-9000" width="18000" height="${9000 + HORIZON + 1}" fill="url(#gSky)"/>
+<g id="starsG" class="starK"></g>
+<g id="sunG"><circle id="sunGlow" r="240" fill="url(#gSunGlow)"/><circle r="50" class="f-sun"/></g>
+<g id="moonG" opacity="0">
+  <circle r="150" fill="url(#gMoonGlow)"/>
+  <circle r="30" fill="#f3f0e4"/>
+  <circle cx="-9" cy="-7" r="6" fill="#dcd6c3"/><circle cx="8" cy="6" r="8" fill="#e2ddcb"/><circle cx="10" cy="-11" r="3.6" fill="#dcd6c3"/><circle cx="-12" cy="11" r="3" fill="#e2ddcb"/>
+</g>
+<g id="cloudsG"></g>
+<g id="gullsG"></g>
+<g id="farG"></g>
+<rect x="-9000" y="${HORIZON}" width="18000" height="${SHORE - HORIZON + 6}" fill="url(#gSea)"/>
+<rect x="-9000" y="${HORIZON - 1.2}" width="18000" height="3" class="f-skyHor" opacity=".6"/>
+<g id="moonPathG" opacity="0"></g>
+<g id="glitterG"></g>
+<g id="wavesG"></g>
+<g id="boatsG"></g>
+<rect x="-9000" y="${SHORE + 8}" width="18000" height="420" fill="url(#gSand)"/>
+<g id="shoreG"></g>
+<g id="beachG"></g>
+<g id="boardG"></g>
+<g id="crabG" opacity="0"><g id="crab">${crabSVG()}</g></g>
+<g id="beamG" class="lampK">
+  <path d="M${LAMP[0]},${LAMP[1] - 10}L1150,-235L1150,70L${LAMP[0]},${LAMP[1] + 10}Z" fill="url(#gBeam)" opacity=".45"/>
+  <path d="M${LAMP[0]},${LAMP[1] - 6}L1000,-168L1000,8L${LAMP[0]},${LAMP[1] + 6}Z" fill="url(#gBeam)" opacity=".7"/>
+  <ellipse cx="540" cy="-2" rx="300" ry="13" fill="url(#gPool)"/>
+</g>
+<g id="shadowG">
+  <ellipse cx="0" cy="3" rx="270" ry="11" fill="url(#gShadow)"/>
+  <ellipse cx="${RA[0]}" cy="2" rx="70" ry="6" fill="url(#gShadow)"/>
+  <ellipse cx="${FA[0]}" cy="2" rx="70" ry="6" fill="url(#gShadow)"/>
+</g>
+<g id="rig">${rigSVG()}</g>
+<g id="lampGlowG" class="lampK"><circle cx="${LAMP[0] + 2}" cy="${LAMP[1]}" r="38" fill="url(#gGlow)"/></g>
+<g id="fxG"></g>
+<g id="fg1G"></g>
+<g id="fg2G"></g>
+<rect id="vig" fill="url(#gVig)" pointer-events="none"/>`;
+
+/* =========================================================================
+   simulation state
+   ========================================================================= */
+const S = {
+  t: 0, dt: 1 / 60, dtS: 1 / 60, scroll: 0, mul: 1, targetMul: 1, v: BASE_V,
+  wheel: 0, crank: 0.4, crankW: CRANK_W_NOM, surge: 0,
+  paused: false, night: 0, nightTarget: 0,
+  B: F(BODY_O[0], BODY_O[1], 0), H: F(BODY_O[0] + HEAD_REST[0], BODY_O[1] + HEAD_REST[1], 0),
+  head: { x: BODY_O[0] + HEAD_REST[0], y: BODY_O[1] + HEAD_REST[1], vx: 0, vy: 0, p: 0, pv: 0, ay: 0 },
+  headOff: [0, 0], pitchOff: 0, gamma: 0, lid: 0, happy: 0, look: [1.4, 0.8],
+  pouch: { s: 0, v: 0 }, bulge: 0, gulpPos: -1, gulpAmp: 0,
+  blinkAt: 2.2, blinkStart: -9, gag: null, nextGag: 13, bellT: -9, clapT: -9,
+  basketFish: 1, spine: [], acc: 0, sub: 0, coastTo: null, jaw: 0,
+  hop: { y: 0, vy: 0, g: 2400, v0: 1, air: false }, crab: null, nextCrab: 30, bodyOff: 0, bodyV: 0, landT: -9, landAmp: 0, scarfKick: 0,
+};
+const ui = {};
+
+/* =========================================================================
+   kinematics: leg IK, neck, scarf, head spring
+   ========================================================================= */
+function ik(h, a, l1, l2) {
+  const dx = a[0] - h[0], dy = a[1] - h[1], d = Math.hypot(dx, dy);
+  const dc = clamp(d, Math.abs(l1 - l2) + 1, l1 + l2 - 0.6);
+  const ang = Math.atan2(dy, dx), al = Math.acos(clamp((l1 * l1 + dc * dc - l2 * l2) / (2 * l1 * dc), -1, 1));
+  const k = [h[0] + l1 * Math.cos(ang - al), h[1] + l1 * Math.sin(ang - al)];
+  const e = d > dc ? [h[0] + dx / d * dc, h[1] + dy / d * dc] : a;
+  return [k, e];
+}
+function leg(B, hip, phase) {
+  const a = S.crank + phase;
+  const p = [BB[0] + CRANK * Math.cos(a), BB[1] + CRANK * Math.sin(a)];
+  const beta = (6 + 12 * Math.sin(a - 0.35)) * DEG, cb = Math.cos(beta), sb = Math.sin(beta);
+  const ank = [p[0] - (PEDAL_IN_FOOT[0] * cb - PEDAL_IN_FOOT[1] * sb), p[1] - (PEDAL_IN_FOOT[0] * sb + PEDAL_IN_FOOT[1] * cb)];
+  const H = ap(B, hip);
+  const [K, A] = ik(H, ank, THIGH, SHIN);
+  return { H, K, A, p, beta, a };
+}
+const NECK_N = 16;
+function computeSpine() {
+  const B = S.B, H = S.H;
+  const p0 = ap(B, NECK_B), p1 = ap(B, NECK_B1), p3 = ap(H, NECK_H), p2 = ap(H, NECK_H1);
+  for (let i = 0; i <= NECK_N; i++) {
+    const t = i / NECK_N, pt = bez(p0, p1, p2, p3, t), d = bezD(p0, p1, p2, p3, t), len = Math.hypot(d[0], d[1]) || 1;
+    let w = lerp(62, 40, t);
+    if (S.gulpAmp > 0) w += S.gulpAmp * 13 * Math.exp(-Math.pow((t - S.gulpPos) / 0.11, 2));
+    S.spine[i] = { p: pt, n: [-d[1] / len, d[0] / len], w };
+  }
+}
+function knotPoint() { const s = S.spine[7]; return [s.p[0] - s.n[0] * (s.w / 2 - 1), s.p[1] - s.n[1] * (s.w / 2 - 1)]; }
+
+const SCARF = [
+  { n: 14, seg: 11.5, w0: 18, w1: 15, ph: 0, off: [0, -2], pts: [], st: [[0.62, 0.69], [0.77, 0.84]] },
+  { n: 10, seg: 11.5, w0: 16, w1: 13.5, ph: 2.3, off: [5, 5], pts: [], st: [[0.6, 0.7]] },
+];
+function scarfInit() {
+  const k = knotPoint();
+  for (const s of SCARF) { s.pts = []; for (let i = 0; i < s.n; i++) { const x = k[0] + s.off[0] - i * s.seg * 0.98, y = k[1] + s.off[1] - i * 1.5; s.pts.push({ x, y, px: x, py: y }); } }
+}
+function scarfStep(dt) {
+  const k = knotPoint(), v = S.v, DR = 2.7, G = S.hop.air ? 150 : 950, kick = S.scarfKick * dt; S.scarfKick = 0;   // near-weightless in the air
+  const B = S.B, kq = inv(B, k);
+  for (const s of SCARF) {
+    const ps = s.pts;
+    ps[0].x = ps[0].px = k[0] + s.off[0]; ps[0].y = ps[0].py = k[1] + s.off[1];
+    for (let i = 1; i < s.n; i++) {
+      const p = ps[i]; if (kick) p.py -= kick * Math.min(1, i / 3);
+      const vx = (p.x - p.px) / dt, vy = (p.y - p.py) / dt;
+      const tur = Math.sin(S.t * 10.5 - i * 0.8 + s.ph) * 0.55 + Math.sin(S.t * 17.3 - i * 1.37 + s.ph * 2) * 0.25 + Math.sin(S.t * 3.1 + s.ph) * 0.2;
+      // relative wind streams backwards and is deflected up over the bird's back; flutter travels down the cloth
+      const ax = (-v - vx) * DR, ay = (tur * (60 + 0.2 * v) - 0.05 * v - vy) * DR + G;
+      const nx = p.x + (p.x - p.px) + ax * dt * dt, ny = p.y + (p.y - p.py) + ay * dt * dt;
+      p.px = p.x; p.py = p.y; p.x = nx; p.y = ny;
+    }
+    for (let it = 0; it < 5; it++) {
+      for (let i = 1; i < s.n; i++) {
+        const a = ps[i - 1], b = ps[i], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6, df = (d - s.seg) / d;
+        if (i === 1) { b.x -= dx * df; b.y -= dy * df; }
+        else { b.x -= dx * df * .5; b.y -= dy * df * .5; a.x += dx * df * .5; a.y += dy * df * .5; }
+      }
+      for (let i = 1; i < s.n; i++) {        // stay behind the neck and on top of the bird's back
+        const p = ps[i], q = inv(B, [p.x, p.y]); let hit = false;
+        if (q[0] > kq[0] + 2) { q[0] = kq[0] + 2; hit = true; }
+        const ex = (q[0] + 8) / 150;
+        if (Math.abs(ex) < 1) { const top = -64 - 74 * Math.sqrt(1 - ex * ex); if (q[1] > top) { q[1] = top; hit = true; } }
+        if (hit) { const w = ap(B, q); p.x = w[0]; p.y = w[1]; }
+      }
+    }
+  }
+}
+function ribbon(s) {
+  const raw = s.pts, n = s.n, L = [], R = [], ps = [];
+  // physics gives the stream direction and droop; a travelling wave on top gives the flag-like flutter
+  const amp = 1.5 + 5 * Math.min(S.mul, 2), om = 8 + 5 * S.mul;
+  for (let i = 0; i < n; i++) {
+    const a = raw[Math.max(0, i - 1)], b = raw[Math.min(n - 1, i + 1)];
+    let tx = b.x - a.x, ty = b.y - a.y; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+    const off = amp * Math.pow(i / (n - 1), 1.15) * Math.sin(S.t * om - i * 0.72 + s.ph);
+    ps.push({ x: raw[i].x - ty * off, y: raw[i].y + tx * off });
+  }
+  for (let i = 0; i < n; i++) {
+    const a = ps[Math.max(0, i - 1)], b = ps[Math.min(n - 1, i + 1)];
+    let tx = b.x - a.x, ty = b.y - a.y; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+    const u = i / (n - 1), tw = 0.74 + 0.26 * Math.cos(S.t * 7 - i * 0.9 + s.ph);
+    const w = lerp(s.w0, s.w1, u) * (i === 0 ? 1 : tw) / 2;
+    L.push([ps[i].x - ty * w, ps[i].y + tx * w]); R.push([ps[i].x + ty * w, ps[i].y - tx * w]);
+  }
+  const d = through(L, 'M') + through(R.slice().reverse(), 'L') + 'Z';
+  const at = (arr, u) => { const f = u * (n - 1), i = Math.min(n - 2, Math.floor(f)), t = f - i; return [lerp(arr[i][0], arr[i + 1][0], t), lerp(arr[i][1], arr[i + 1][1], t)]; };
+  let st = '';
+  for (const [u0, u1] of s.st) {
+    const l0 = at(L, u0), l1 = at(L, u1), r0 = at(R, u0), r1 = at(R, u1);
+    const sh = (p, q) => [lerp(p[0], q[0], .12), lerp(p[1], q[1], .12)];
+    st += `M${P(sh(l0, r0))}L${P(sh(l1, r1))}L${P(sh(r1, l1))}L${P(sh(r0, l0))}Z`;
+  }
+  const e = ps[n - 1], e2 = ps[n - 2];
+  let tx = e.x - e2.x, ty = e.y - e2.y; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+  let fr = '';
+  for (let j = 0; j < 4; j++) {
+    const b = [lerp(L[n - 1][0], R[n - 1][0], (j + .5) / 4), lerp(L[n - 1][1], R[n - 1][1], (j + .5) / 4)];
+    const wig = Math.sin(S.t * 16 + j * 1.7) * 2;
+    fr += `M${P(b)}l${r2(tx * 8 - ty * wig)},${r2(ty * 8 + tx * wig)}`;
+  }
+  return { d, st, fr };
+}
+
+/* =========================================================================
+   step — advance the simulation by dt seconds
+   ========================================================================= */
+function bodyFrame() {
+  const pedal = clamp(S.crankW / CRANK_W_NOM, 0, 1);
+  const ph = S.crank, bob = (-1.7 * Math.cos(2 * ph) - 0.3) * pedal;
+  const lean = (2.5 + 3.4 * (S.mul - 1)) * DEG + 0.55 * DEG * Math.sin(2 * ph) * pedal;
+  return F(BODY_O[0], BODY_O[1] + bob + S.bodyOff, lean);
+}
+const KEYS = {   // fish gag keyframes: time → [dx, dy, pitch°]
+  pose: [[0, 0, 0, 0], [0.42, 30, 10, 56], [0.56, 30, 10, 56], [0.9, 4, -8, -10], [0.98, 0, -12, -16], [1.4, -8, -10, -34], [1.83, -8, -10, -38], [1.95, -6, -6, -24], [2.6, 0, 0, 0]],
+  gamma: [[0, 0], [0.28, 0], [0.4, 12], [0.46, 12], [0.53, 0], [1.1, 0], [1.4, 36], [1.83, 36], [1.9, 0], [9, 0]],
+};
+function keyAt(arr, t, idx) {
+  if (t <= arr[0][0]) return arr[0][idx];
+  for (let i = 1; i < arr.length; i++) if (t <= arr[i][0]) { const a = arr[i - 1], b = arr[i], u = easeIO((t - a[0]) / (b[0] - a[0])); return lerp(a[idx], b[idx], u); }
+  return arr[arr.length - 1][idx];
+}
+const GAG_LAUNCH = 0.98, GAG_LAND = 1.83;
+function mouthTarget() {   // where the open mouth will be when the fish lands
+  const tgt = ap(S.B, HEAD_REST), off = [keyAt(KEYS.pose, GAG_LAND, 1), keyAt(KEYS.pose, GAG_LAND, 2)], pitch = keyAt(KEYS.pose, GAG_LAND, 3) * DEG;
+  const Hf = F(tgt[0] + off[0] + (S.mul - 1) * 10, tgt[1] + off[1] + (S.mul - 1) * 6, pitch);
+  return ap(Hf, [104, 16]);
+}
+function gagStep() {
+  const g = S.gag; if (!g) return;
+  const tau = S.t - g.t0;
+  S.headOff = [keyAt(KEYS.pose, tau, 1), keyAt(KEYS.pose, tau, 2)];
+  S.pitchOff = keyAt(KEYS.pose, tau, 3) * DEG;
+  S.gamma = keyAt(KEYS.gamma, tau, 1) * DEG;
+  if (tau >= 0.5 && S.basketFish === 1) S.basketFish = 0;
+  if (tau >= 0.5 && tau < GAG_LAUNCH) { g.mode = 'held'; }
+  else if (tau >= GAG_LAUNCH && g.mode === 'held') {
+    g.mode = 'fly';
+    const tip = ap(S.H, [182, 50]), tgt = mouthTarget(), T = GAG_LAND - GAG_LAUNCH, Gv = 1300;
+    g.fx = tip[0]; g.fy = tip[1]; g.vx = (tgt[0] - tip[0]) / T; g.vy = (tgt[1] - tip[1]) / T - 0.5 * Gv * T; g.spin = 0; g.g = Gv;
+  }
+  if (g.mode === 'fly') {
+    g.vy += g.g * S.dt; g.fx += g.vx * S.dt; g.fy += g.vy * S.dt; g.spin += 760 * S.dt;
+    if (tau >= GAG_LAND) { g.mode = 'eaten'; S.bulge = 1; }
+  }
+  if (tau > 2.1 && tau < 2.75) { S.gulpPos = lerp(0.95, 0.08, (tau - 2.1) / 0.65); S.gulpAmp = Math.sin(Math.PI * (tau - 2.1) / 0.65); }
+  else S.gulpAmp = 0;
+  if (tau > 3.6) { S.basketFish = 1; S.gag = null; S.headOff = [0, 0]; S.pitchOff = 0; S.gamma = 0; S.nextGag = S.t + rr(16, 26); }
+}
+function startGag() { if (S.gag) return; S.gag = { t0: S.t, mode: 'basket' }; }
+/* ---- bunny hop (over a crab, or on request) ---- */
+function hopParams(H) { const v = Math.max(S.v, 300), g = clamp(2400 * (v / 900) ** 2, 900, 4200); return { v, g, v0: Math.sqrt(2 * g * H) }; }
+function hop(g, v0) {
+  const h = S.hop; if (h.air) return false;
+  Object.assign(h, { air: true, g, v0, vy: -v0 });
+  S.bodyV += v0 * 0.2; S.head.vy += v0 * 0.12; S.scarfKick += v0 * 0.45;   // everything soft lags behind the bike
+  return true;
+}
+function hopStep(dt) {
+  const h = S.hop;
+  if (h.air) {
+    h.vy += h.g * dt; h.y += h.vy * dt;
+    if (h.y >= 0) { S.landAmp = Math.min(1, h.vy / 650); S.landT = S.t; S.bodyV += h.vy * 0.2; S.head.vy += h.vy * 0.12; S.scarfKick += h.vy * 0.4; h.y = 0; h.vy = 0; h.air = false; }
+  }
+  const k = 320, c = 2 * Math.sqrt(k) * 0.35;
+  S.bodyV += (-k * S.bodyOff - c * S.bodyV) * dt; S.bodyOff = clamp(S.bodyOff + S.bodyV * dt, -10, 14);
+}
+function crabStep(dt) {
+  const c = S.crab; if (!c) return;
+  c.x += c.walk * dt;
+  const cx = c.x - S.scroll - S.surge;            // crab position relative to the bike centre
+  if (!c.hopped) {
+    // take off so both wheels clear the crab symmetrically about the top of the jump
+    const { v, g } = hopParams(0), d = 178 / v, H = 54 + g * d * d / 2, v0 = Math.sqrt(2 * g * H), T = 2 * v0 / g;
+    if (cx <= v * T / 2) { c.hopped = true; if (!hop(g, v0)) { c.surprised = S.t; c.dodge = S.t; } }   // already airborne: the crab ducks off the boardwalk
+  }
+  if (c.hopped && c.surprised < 0 && cx < -40) { c.surprised = S.t; c.walk = -40; }
+  if (c.x - S.scroll < view.x0 - 140 || (c.dodge && S.t - c.dodge > 0.5)) { S.crab = null; S.nextCrab = S.t + rr(32, 50); }
+}
+function headStep(dt) {
+  const pedal = clamp(S.crankW / CRANK_W_NOM, 0, 1);
+  const tgt = ap(S.B, HEAD_REST), nod = 1.4 * Math.sin(2 * S.crank - 1.1) * pedal;
+  const tx = tgt[0] + S.headOff[0] + (S.mul - 1) * 10, ty = tgt[1] + S.headOff[1] + (S.mul - 1) * 6 + nod;
+  const K = S.gag ? 520 : 200, C = 2 * Math.sqrt(K) * (S.gag ? 0.82 : 0.48), h = S.head;
+  const ax = K * (tx - h.x) - C * h.vx, ay = K * (ty - h.y) - C * h.vy;
+  h.vx += ax * dt; h.vy += ay * dt; h.x += h.vx * dt; h.y += h.vy * dt; h.ay = ay;
+  let clap = 0; const ct = S.t - S.clapT; if (ct < 0.42) clap = 16 * Math.abs(Math.sin(ct / 0.42 * TAU)) * DEG;
+  const pt = (-1 + (S.mul - 1) * 3) * DEG + S.pitchOff - clap * 0.3, KP = S.gag ? 420 : 260;
+  h.pv += (KP * (pt - h.p) - 2 * Math.sqrt(KP) * 0.75 * h.pv) * dt; h.p += h.pv * dt;
+  S.jaw = Math.max(S.gamma, clap);
+  const po = S.pouch; po.v += (-130 * po.s - 5.5 * po.v - ay * 0.0012) * dt; po.s += po.v * dt; po.s = clamp(po.s, -0.8, 1.2);
+  S.H = F(h.x, h.y, h.p);
+}
+function step(dt) {
+  S.t += dt; S.dt = dt; S.dtS = lerp(S.dtS, dt, 0.12);
+  S.mul += (S.targetMul - S.mul) * (1 - Math.exp(-dt * 1.4));
+  S.v = BASE_V * S.mul;
+  S.scroll += S.v * dt;
+  S.wheel += S.v / WHEEL_R * dt;
+  // freewheel: while slowing down the bird stops pedalling and lets the cranks settle level, like a real rider
+  const coasting = S.targetMul < S.mul - 0.03, pedalW = S.v / WHEEL_R * (COG_R / RING_R);
+  let wantW = pedalW;
+  if (coasting) {
+    if (S.coastTo === null) { S.coastTo = Math.ceil(S.crank / Math.PI) * Math.PI; if (S.coastTo - S.crank < 0.35) S.coastTo += Math.PI; }
+  } else S.coastTo = null;
+  if (S.hop.air) wantW = 0;                                    // feet rest on the pedals mid-air
+  S.crankW += (wantW - S.crankW) * (1 - Math.exp(-dt * (S.hop.air ? 14 : 7)));
+  if (S.coastTo !== null) S.crankW = Math.min(S.crankW, Math.max(0, (S.coastTo - S.crank) * 5));   // ease into level, never past it
+  S.crank += S.crankW * dt;
+  S.surge += (clamp((S.targetMul - S.mul) * 55, -40, 40) - S.surge) * (1 - Math.exp(-dt * 2));
+  S.B = bodyFrame();
+  // blink & expression
+  if (S.t > S.blinkAt) { S.blinkStart = S.t; S.blinkAt = S.t + (rand() < 0.18 ? 0.34 : rr(2.4, 5.8)); }
+  const bt = (S.t - S.blinkStart) / 0.15, blink = bt < 1 ? 1 - Math.abs(2 * bt - 1) : 0;
+  S.lid = Math.max(S.hop.air ? 0 : 0.1 + clamp((S.mul - 1.25) * 0.45, 0, 0.28), blink);
+  {   // happy ^ ^ eyes: after a click, after landing a jump, and while savouring a fish
+    const ct = S.t - S.clapT, sl = S.t - S.landT, tau = S.gag ? S.t - S.gag.t0 : -1;
+    let hT = 0;
+    if (ct < 0.9) hT = Math.max(hT, smooth(0, 0.1, ct) * (1 - smooth(0.7, 0.9, ct)));
+    if (sl > 0.06 && sl < 0.9) hT = Math.max(hT, smooth(0.06, 0.16, sl) * (1 - smooth(0.7, 0.9, sl)));
+    if (tau > 1.95 && tau < 2.95) hT = 1;
+    S.happy += (hT - S.happy) * (1 - Math.exp(-dt * 16));
+  }
+  if (!S.gag && !S.crab && S.t > S.nextGag) startGag();
+  if (!S.gag && !S.crab && !S.hop.air && S.t > S.nextCrab && S.mul > 0.6) S.crab = { x: S.scroll + view.x0 + view.W + 70, walk: 26, hopped: false, surprised: -9 };
+  crabStep(dt);
+  hopStep(dt);
+  gagStep();
+  S.bulge = Math.max(0, S.bulge - dt * 1.3);
+  // physics with fixed sub-steps
+  S.acc += dt;
+  const h = 1 / 240;
+  let n = 0;
+  while (S.acc >= h && n < 40) { headStep(h); S.acc -= h; n++; S.sub = (S.sub + 1) & 1; if (!S.sub) { computeSpine(); scarfStep(h * 2); } }   // cloth runs at 120 Hz whatever the display rate
+  computeSpine();
+  // night transition
+  if (S.night !== S.nightTarget) S.night = S.night < S.nightTarget ? Math.min(S.nightTarget, S.night + dt / 5.5) : Math.max(S.nightTarget, S.night - dt / 5.5);
+}
+
+/* =========================================================================
+   background layers
+   ========================================================================= */
+class Spawner {
+  constructor(g, f, make, gap, margin = 260) { Object.assign(this, { g, f, make, gap, margin, items: [] }); }
+  sx(it) { return it.x - S.scroll * this.f * (it.fm || 1) - S.t * (it.drift || 0); }
+  fill() {
+    const L = view.x0 - this.margin, R = view.x0 + view.W + this.margin;
+    for (let i = this.items.length - 1; i >= 0; i--) { const it = this.items[i]; if (this.sx(it) + it.w / 2 < L) { it.el.remove(); this.items.splice(i, 1); } }
+    let right = L - this.gap() * rand();
+    for (const it of this.items) right = Math.max(right, this.sx(it) + it.w / 2);
+    while (right < R) {
+      const it = this.make(), c = right + this.gap() + it.w / 2;
+      it.x = c + S.scroll * this.f * (it.fm || 1) + S.t * (it.drift || 0);
+      if (it.place) it.place(it);
+      let before = null;
+      if (it.depth !== undefined) for (const o of this.items) if (o.depth > it.depth && (!before || o.depth < before.depth)) before = o;
+      this.g.insertBefore(it.el, before ? before.el : null);
+      this.items.push(it); right = c + it.w / 2;
+    }
+  }
+  update() {
+    this.fill();
+    for (const it of this.items) { const x = this.sx(it); attr(it.el, 'transform', `translate(${r2(x)},${r2(it.y)})`); if (it.anim) it.anim(it, x); }
+  }
+}
+const wrap = html => { const g = mk('g'); g.innerHTML = html; return g; };
+
+/* ---- clouds ---- */
+function makeCloud() {
+  const sc = rr(0.55, 1.2), w = rr(160, 300) * sc, n = 4 + ((rand() * 4) | 0);
+  let sh = '', mn = '';
+  for (let i = 0; i < n; i++) {
+    const t = i / (n - 1), px = (t - 0.5) * w * 0.74, pr = (0.36 + 0.64 * Math.sin(Math.PI * (0.12 + 0.76 * t))) * w * 0.2 * rr(0.85, 1.18);
+    sh += `<circle cx="${r2(px)}" cy="${r2(-pr * .5 + 5 * sc)}" r="${r2(pr)}"/>`; mn += `<circle cx="${r2(px)}" cy="${r2(-pr * .5)}" r="${r2(pr)}"/>`;
+  }
+  const bh = w * 0.1;
+  sh += `<rect x="${r2(-w / 2)}" y="${r2(-bh + 5 * sc)}" width="${r2(w)}" height="${r2(bh)}" rx="${r2(bh / 2)}"/>`;
+  mn += `<rect x="${r2(-w / 2)}" y="${r2(-bh)}" width="${r2(w)}" height="${r2(bh)}" rx="${r2(bh / 2)}"/>`;
+  const top = view.y0 + Math.min(200, (HORIZON - view.y0) * 0.5) + w * 0.12, bot = HORIZON - 105;
+  return { el: wrap(`<g class="f-cloudSh">${sh}</g><g class="f-cloud">${mn}</g>`), w: w + 30, y: rr(Math.min(top, bot - 10), bot), fm: 0.6 + sc * 0.6, drift: rr(5, 14) * sc, depth: sc };
+}
+/* ---- distant headlands with a lighthouse ---- */
+const lighthouses = [];
+function makeFar() {
+  const w = rr(380, 900), h = rr(24, 62), hasLH = rand() < 0.55;
+  const pts = []; const n = 8;
+  for (let i = 0; i <= n; i++) { const t = i / n; pts.push([lerp(-w / 2, w / 2, t), -h * Math.pow(Math.sin(Math.PI * t), 0.7) * rr(0.75, 1.05)]); }
+  pts[0][1] = 0; pts[n][1] = 0;
+  let d = through(pts, 'M') + 'L' + r2(w / 2) + ',4L' + r2(-w / 2) + ',4Z';
+  const lhx = w * 0.18, lhy = pts[Math.round(n * (0.5 + 0.18))][1] + 4;
+  let lh = '';
+  if (hasLH) lh = `<g transform="translate(${r2(lhx)},${r2(lhy)}) scale(.9)">
+      <path d="M-6,0L-4,-40L4,-40L6,0Z" class="f-lightH"/><path d="M-5.4,-10L-4.8,-18L4.8,-18L5.4,-10ZM-4.5,-26L-4.2,-33L4.2,-33L4.5,-26Z" class="f-lightR"/>
+      <rect x="-6" y="-42.5" width="12" height="2.5" class="f-far2"/><rect x="-3.2" y="-49" width="6.4" height="6.5" class="f-glass"/><path d="M-4.5,-49L0,-54L4.5,-49Z" class="f-lightR"/>
+      <g class="lampK"><circle cx="0" cy="-46" r="16" fill="url(#gGlow)"/><g class="lhBeam"><path d="M0,-49L240,-60L240,-32Z" fill="url(#gLH)"/></g><g class="lhBeam2"><path d="M0,-49L-240,-60L-240,-32Z" fill="url(#gLH)" transform="scale(-1,1) translate(0,0)"/></g></g></g>`;
+  const tone = rand() < 0.5 ? 'far1' : 'far2';
+  const el = wrap(`<path d="${d}" class="f-${tone}"/>${lh}`);
+  const it = { el, w: w + 260, y: HORIZON + 1.5, drift: 0 };
+  if (hasLH) it.anim = (it) => {
+    const a = S.t * 1.1 + it.x * 0.01, c = Math.cos(a);
+    const b1 = it.el.querySelector('.lhBeam'), b2 = it.el.querySelector('.lhBeam2');
+    attr(b1, 'transform', `translate(0,-49) scale(${r2(Math.max(0, c))},1) translate(0,49)`);
+    attr(b2, 'transform', `translate(0,-49) scale(${r2(Math.min(0, c))},1) translate(0,49)`);
+  };
+  return it;
+}
+/* ---- boats ---- */
+function makeBoat() {
+  const d = Math.pow(rand(), 1.3), sc = lerp(0.35, 0.95, d), y = lerp(HORIZON + 8, SHORE - 30, d);
+  const sail = pick(['sail1', 'sail2', 'sail3', 'sail4', 'sail1']), jib = pick(['sail1', 'sail2']), hull = pick(['hull1', 'hull2', 'hull3']);
+  const el = wrap(`<g class="bob"><g transform="scale(${r2(sc)})">
+    <path d="M-30,-8L30,-8L22,3L-24,3Z" class="f-${hull}"/><path d="M-30,-8L30,-8" class="s-hull1" stroke-width="1.4" opacity=".5"/>
+    <path d="M0,-8L0,-74" class="s-hull1" stroke-width="2"/>
+    <path d="M2,-72C14,-50 22,-30 28,-12L2,-12Z" class="f-${sail}"/>
+    <path d="M-2,-66L-2,-12L-24,-12Z" class="f-${jib}"/>
+    <path d="M0,-74L10,-71L0,-68Z" class="f-umbA"/>
+    <circle cx="0" cy="-76" r="5" fill="url(#gGlow)" class="lampK"/>
+  </g></g>`);
+  return { el, w: 70 * sc + 40, y, fm: lerp(0.6, 1.4, d), drift: rr(-10, 16) * sc, depth: d, ph: rr(0, TAU),
+    anim: (it) => attr(it.el.firstChild, 'transform', `translate(0,${r2(Math.sin(S.t * 1.6 + it.ph) * 1.4)}) rotate(${r2(Math.sin(S.t * 1.2 + it.ph) * 2.5)})`) };
+}
+/* ---- beach props ---- */
+function umbrellaSVG() {
+  const [ca, cb] = pick([['umbA', 'umbB'], ['umbC', 'umbB'], ['umbD', 'umbB'], ['umbE', 'umbB'], ['umbA', 'umbC'], ['umbD', 'umbC']]);
+  const towel = pick(['towel1', 'towel2', 'towel3']), tilt = rr(-12, 9), Rx = 52, Ry = 30, n = 8;
+  const xs = []; for (let i = 0; i <= n; i++) xs.push(Rx * Math.cos(Math.PI * i / n));   // meridian feet, right → left
+  let dome = `M${-Rx},0A${Rx},${Ry} 0 0 1 ${Rx},0`; for (let i = 1; i <= n; i++) dome += `Q${r2((xs[i - 1] + xs[i]) / 2)},6 ${r2(xs[i])},0`; dome += 'Z';
+  let stripes = '';
+  for (let i = 0; i < n; i += 2) {
+    const xa = xs[i], xb = xs[i + 1], sa = xa >= 0 ? 1 : 0, sb = xb >= 0 ? 0 : 1;
+    stripes += `M0,${-Ry}A${r2(Math.max(.01, Math.abs(xa)))},${Ry} 0 0 ${sa} ${r2(xa)},0Q${r2((xa + xb) / 2)},6 ${r2(xb)},0A${r2(Math.max(.01, Math.abs(xb)))},${Ry} 0 0 ${sb} 0,${-Ry}Z`;
+  }
+  return `<ellipse cx="14" cy="2" rx="60" ry="6" class="f-sandDk" opacity=".45"/>
+    <path d="M-46,1L34,1L44,8L-36,8Z" class="f-${towel}"/><path d="M-36,4.5L39,4.5" class="s-umbB" stroke-width="2" opacity=".7"/>
+    <path d="M0,4L4,-104" class="s-pole" stroke-width="3.2" stroke-linecap="round"/>
+    <g transform="translate(4,-102) rotate(${r2(tilt)})"><path d="${dome}" class="f-${ca}"/><path d="${stripes}" class="f-${cb}"/><path d="M-50,1Q0,-8 50,1" class="s-sandDk" stroke-width="1.5" fill="none" opacity=".35"/><circle cx="0" cy="${-Ry - 2}" r="3" class="f-pole"/></g>`;
+}
+function castleSVG() {
+  return `<path d="M-36,2C-30,-10 30,-10 36,2Z" class="f-sandSh"/>
+    <path d="M-20,-6h40v-14h-40z" class="f-sandSh"/>
+    <path d="M-28,-4v-26h4v4h4v-4h4v26zM12,-4v-26h4v4h4v-4h4v26zM-7,-14v-32h4v4h6v-4h4v32z" class="f-sandSh"/>
+    <path d="M-28,-30h16M12,-30h16M-7,-46h14" class="s-sandLt" stroke-width="1.4" opacity=".8"/>
+    <rect x="-3" y="-14" width="6" height="8" rx="3" class="f-sandDk"/>
+    <path d="M0,-46V-60" class="s-trunkDk" stroke-width="1.4"/><path d="M0,-60L12,-56.5L0,-53Z" class="f-umbA"/>`;
+}
+function ballSVG() { return `<ellipse cx="2" cy="1" rx="13" ry="3" class="f-sandDk" opacity=".4"/><g transform="translate(0,-11)"><circle r="11" class="f-umbB"/><path d="M0,-11A11,11 0 0 1 9.5,5.5Q2,1 0,-11Z" class="f-umbA"/><path d="M9.5,5.5A11,11 0 0 1 -9.5,5.5Q0,1.5 9.5,5.5Z" class="f-umbD"/><path d="M-9.5,5.5A11,11 0 0 1 0,-11Q-2,1 -9.5,5.5Z" class="f-umbC"/><circle cx="-4" cy="-4.5" r="2.4" class="f-umbB" opacity=".7"/></g>`; }
+function grassSVG(scale = 1, cls = ['grass1', 'grass2', 'grass3']) {
+  let d = ['', '', ''];
+  const n = 6 + ((rand() * 5) | 0);
+  for (let i = 0; i < n; i++) { const x = rr(-14, 14), h = rr(22, 46) * scale, lean = rr(-16, 16) * scale; d[i % 3] += `M${r2(x)},2Q${r2(x + lean * .3)},${r2(-h * .6)} ${r2(x + lean)},${r2(-h)}`; }
+  return d.map((p, i) => `<path d="${p}" class="s-${cls[i]}" stroke-width="${r2(2.2 * Math.sqrt(scale))}" fill="none" stroke-linecap="round"/>`).join('');
+}
+function palmSVG() {
+  let rings = ''; for (let i = 1; i < 11; i++) { const t = i / 11, x = lerp(0, 22, t * t), y = -t * 196; rings += `M${r2(x - 6.5 + t * 2)},${r2(y)}q${r2(6.5 - t * 2)},3 ${r2(13 - t * 4)},0`; }
+  let fr = '';
+  const cx = 24, cy = -198;
+  for (const [a, l, c] of [[-170, 86, 'palm2'], [-140, 92, 'palm1'], [-100, 70, 'palm2'], [-60, 88, 'palm1'], [-20, 90, 'palm2'], [10, 80, 'palm1'], [160, 76, 'palm1']]) {
+    const ar = a * DEG, tip = [cx + Math.cos(ar) * l, cy + Math.sin(ar) * l + l * 0.42], mid = [cx + Math.cos(ar) * l * 0.55, cy + Math.sin(ar) * l * 0.55 - 14];
+    const nx = -Math.sin(ar) * 9, ny = Math.cos(ar) * 9;
+    fr += `<path d="M${cx},${cy}Q${r2(mid[0] + nx)},${r2(mid[1] + ny)} ${r2(tip[0])},${r2(tip[1])}Q${r2(mid[0] - nx)},${r2(mid[1] - ny)} ${cx},${cy}Z" class="f-${c}"/>`;
+  }
+  return `<ellipse cx="34" cy="2" rx="40" ry="4" class="f-sandDk" opacity=".35"/>
+    <path d="M-7,0C-4,-80 8,-150 20,-198L28,-196C17,-150 6,-80 7,0Z" class="f-trunk"/><path d="${rings}" class="s-trunkDk" stroke-width="1.6" fill="none"/>
+    <g class="sway">${fr}<circle cx="20" cy="-192" r="4.6" class="f-coco"/><circle cx="28" cy="-190" r="4.2" class="f-coco"/><circle cx="24" cy="-186" r="4.4" class="f-coco"/></g>`;
+}
+function lifeguardSVG() {
+  return `<ellipse cx="0" cy="2" rx="46" ry="5" class="f-sandDk" opacity=".35"/>
+    <path d="M-26,0L-18,-62M26,0L18,-62M-22,-30L22,-30M-24,-12L20,-50M24,-12L-20,-50" class="s-lgWood" stroke-width="4.4" stroke-linecap="round" fill="none"/>
+    <path d="M30,0L22,-62M36,0L28,-62M31,-14L35,-14M30,-28L34,-28M28,-42L32,-42" class="s-lgWood" stroke-width="2.4" fill="none"/>
+    <rect x="-30" y="-66" width="60" height="6" class="f-lgWood"/>
+    <rect x="-22" y="-100" width="44" height="34" class="f-lgWood"/><rect x="-14" y="-94" width="28" height="13" class="f-seaFar"/>
+    <path d="M-30,-100L0,-118L30,-100Z" class="f-lgRed"/><path d="M20,-112V-138" class="s-trunkDk" stroke-width="1.6"/><path d="M20,-138L36,-133L20,-128Z" class="f-lgRed"/>`;
+}
+function makeBeach() {
+  const r = rand(), depth = rand(), sc = lerp(0.6, 1.0, depth), y = lerp(SHORE + 20, BW_FAR - 3, depth);
+  let html, w, kind = '';
+  if (r < 0.4) { html = umbrellaSVG(); w = 130; }
+  else if (r < 0.54) { html = castleSVG(); w = 80; }
+  else if (r < 0.64) { html = ballSVG(); w = 34; }
+  else if (r < 0.82) { html = grassSVG(0.8); w = 40; }
+  else if (r < 0.91) { html = palmSVG(); w = 200; kind = 'palm'; }
+  else { html = lifeguardSVG(); w = 110; }
+  const it = { el: wrap(`<g transform="scale(${r2(sc)})">${html}</g>`), w: w * sc, y, fm: lerp(0.86, 1.12, depth), depth, ph: rr(0, TAU) };
+  if (kind === 'palm') it.anim = (it) => { const s = it.el.querySelector('.sway'); attr(s, 'transform', `rotate(${r2(Math.sin(S.t * 1.3 + it.ph) * 2.2)} 24 -198)`); };
+  return it;
+}
+/* ---- foreground ---- */
+const DUNE_P = 1400;
+const duneY = x => 120 + 7 * Math.sin(x * TAU / DUNE_P * 2 + 0.6) + 4 * Math.sin(x * TAU / DUNE_P * 5 + 1.9) + 2.4 * Math.sin(x * TAU / DUNE_P * 9 + 0.3);
+function makeTuft() {
+  const big = rand() < 0.3;
+  const it = { el: wrap(`<g class="sway">${grassSVG(big ? 1.5 : 1.05)}</g>`), w: big ? 50 : 34, y: 0, ph: rr(0, TAU) };
+  it.place = it => { it.y = duneY(it.x) + 3; };
+  it.anim = it => attr(it.el.firstChild, 'transform', `rotate(${r2(Math.sin(S.t * 1.7 + it.ph) * 3 - 2)})`);
+  return it;
+}
+function makeFg2() {
+  const r = rand(), yb = view.y0 + view.H - rand() * Math.max(0, view.H - 900) * 0.45;
+  if (r < 0.45) {
+    const n = 10 + ((rand() * 10) | 0); let slats = '';
+    for (let i = 0; i < n; i++) { const h = rr(64, 84), x = i * 15 - n * 7.5, tl = rr(-3, 3); slats += `<path d="M${r2(x)},0L${r2(x + tl)},${r2(-h)}" stroke-width="8"/>`; }
+    const w = n * 15;
+    return { el: wrap(`<g class="s-post" stroke-linecap="round">${slats}</g><path d="M${-w / 2},-24L${w / 2},-26M${-w / 2},-58L${w / 2},-60" class="s-brace" stroke-width="1.8" fill="none"/>`), w: w + 40, y: yb - rr(4, 24) };
+  }
+  return { el: wrap(grassSVG(2.6, ['grassDk', 'grass2', 'grass1'])), w: 70, y: yb + 6 };
+}
+
+/* ---- builders that depend on the view rectangle ---- */
+function lampSVG(x) {
+  return `<g transform="translate(${x},${BW_FAR + 3})">
+    <ellipse cx="0" cy="17" rx="130" ry="17" fill="url(#gPool)" class="lampK"/>
+    <path d="M-10,0L-7,-14L-5,-24L5,-24L7,-14L10,0Z" class="f-lamp"/>
+    <rect x="-3.2" y="-372" width="6.4" height="350" class="f-lamp"/><path d="M-1.4,-366V-28" class="s-lampHi" stroke-width="1.4"/>
+    <rect x="-5.5" y="-140" width="11" height="5" rx="1.5" class="f-brass"/><rect x="-5.5" y="-360" width="11" height="4" rx="1.5" class="f-brass"/>
+    <rect x="-8" y="-376" width="16" height="4" class="f-lamp"/>
+    <path d="M-9,-376L-11,-402L11,-402L9,-376Z" class="f-glass"/>
+    <path d="M-9,-376L-11,-402L11,-402L9,-376Z" fill="#fff3c4" class="lampK"/>
+    <path d="M0,-376V-402M-10,-389H10" class="s-lamp" stroke-width="1.4"/>
+    <path d="M-14,-402L0,-416L14,-402Z" class="f-lamp"/><circle cx="0" cy="-419" r="2.8" class="f-brass"/>
+    <circle cx="0" cy="-389" r="95" fill="url(#gGlow)" class="lampK"/>
+  </g>`;
+}
+function buildBoard() {
+  const Pd = 960, PW = 40, x0 = Math.floor((view.x0 - Pd) / Pd) * Pd, x1 = view.x0 + view.W + 2 * Pd;
+  const shades = [1, 3, 2, 1, 4, 2, 3, 1, 2, 4, 1, 3, 4, 2, 1, 3, 2, 4, 3, 1, 4, 2, 3, 4];
+  const pl = ['', '', '', '', '']; let seams = '', nails = '', posts = '', postHi = '', braces = '', bolts = '', lamps = '';
+  for (let x = x0, i = 0; x < x1; x += PW, i++) {
+    pl[shades[i % 24]] += `M${x},${BW_FAR}h${PW}v${BW_NEAR - BW_FAR}h-${PW}z`;
+    seams += `M${x},${BW_FAR}v${BW_NEAR - BW_FAR}`;
+    nails += `M${x + PW / 2 - .9},${BW_FAR + 5}h1.8v1.8h-1.8zM${x + PW / 2 - .9},${BW_NEAR - 8}h1.8v1.8h-1.8z`;
+  }
+  for (let x = x0; x < x1; x += 240) {
+    const px = x + 109;
+    posts += `M${px},${FASCIA}h22v124h-22z`; postHi += `M${px + 4},${FASCIA + 2}v120`;
+    braces += `M${px + 22},${FASCIA + 10}L${px + 240},${FASCIA + 72}M${px + 22},${FASCIA + 72}L${px + 240},${FASCIA + 10}`;
+    bolts += `<circle cx="${px + 6}" cy="${BW_NEAR + 11}" r="1.9"/><circle cx="${px + 16}" cy="${BW_NEAR + 11}" r="1.9"/>`;
+  }
+  for (let x = x0; x < x1; x += Pd) lamps += lampSVG(x + 620);
+  $('boardG').innerHTML = `<g id="boardMove">
+    <rect x="${x0}" y="${FASCIA}" width="${x1 - x0}" height="130" fill="url(#gUnder)"/>
+    <path d="${braces}" class="s-brace" stroke-width="7" fill="none"/>
+    <path d="${posts}" class="f-post"/><path d="${postHi}" class="s-postHi" stroke-width="2.6"/>
+    <rect x="${x0}" y="${BW_NEAR}" width="${x1 - x0}" height="${FASCIA - BW_NEAR}" class="f-fascia"/>
+    <rect x="${x0}" y="${BW_NEAR}" width="${x1 - x0}" height="2.4" class="f-fasciaHi"/>
+    <rect x="${x0}" y="${FASCIA - 3}" width="${x1 - x0}" height="3" class="f-post"/>
+    <g class="f-seam">${bolts}</g>
+    <path d="${pl[1]}" class="f-wood1"/><path d="${pl[2]}" class="f-wood2"/><path d="${pl[3]}" class="f-wood3"/><path d="${pl[4]}" class="f-wood4"/>
+    <rect x="${x0}" y="${BW_FAR}" width="${x1 - x0}" height="3" class="f-seam" opacity=".5"/>
+    <path id="seams" d="${seams}" class="s-seam" fill="none" stroke-width="1.6"/>
+    <path id="nails" d="${nails}" class="f-seam" opacity=".6"/>
+    ${lamps}
+  </g>`;
+}
+function buildShore() {
+  const Pd = 720, x0 = Math.floor((view.x0 - Pd) / Pd) * Pd, x1 = view.x0 + view.W + 2 * Pd;
+  const fy = x => SHORE + 1 + 2.4 * Math.sin(x * TAU / 240) + 1.4 * Math.sin(x * TAU / 90 + 1);
+  let top = '', l2 = '';
+  for (let x = x0; x <= x1; x += 8) { top += (x === x0 ? 'M' : 'L') + x + ',' + r2(fy(x)); l2 += (x === x0 ? 'M' : 'L') + x + ',' + r2(fy(x + 37) + 8); }
+  $('shoreG').innerHTML = `<g id="shoreMove"><path d="${top}L${x1},${SHORE + 20}L${x0},${SHORE + 20}Z" fill="url(#gWet)"/>
+    <path id="foam2" d="${l2}" class="s-foam" fill="none" stroke-width="1.6"/>
+    <path id="foam1" d="${top}" class="s-foam" fill="none" stroke-width="3.4" stroke-linecap="round"/></g>`;
+}
+function buildDune() {
+  const x0 = Math.floor((view.x0 - DUNE_P) / DUNE_P) * DUNE_P, x1 = view.x0 + view.W + 2 * DUNE_P, yb = view.y0 + view.H + 80;
+  let d = '', rim = '';
+  for (let x = x0; x <= x1; x += 14) { const y = r2(duneY(x)); d += (x === x0 ? 'M' : 'L') + x + ',' + y; }
+  rim = d; d += `L${x1},${yb}L${x0},${yb}Z`;
+  const r = rng(31); let dots = '', shells = '', tracks = '';
+  const per = Math.max(1, Math.ceil((yb - 140) / 160));             // denser scatter on tall screens
+  for (let x = x0; x < x1; x += 46) for (let k = 0; k < per; k++) {
+    const xx = x + r() * 40, yy = duneY(xx) + 16 + r() * (yb - duneY(xx) - 40), q = r();
+    if (q < 0.1) shells += `<g transform="translate(${r2(xx)},${r2(yy)}) rotate(${r2(r() * 60 - 30)})"><path d="M0,0C-6,-1 -7,-8 0,-10C7,-8 6,-1 0,0Z" class="f-shell"/><path d="M0,-1V-9M-2.6,-2L-3.6,-8M2.6,-2L3.6,-8" class="s-shellDk" stroke-width=".9"/></g>`;
+    else if (q < 0.115 && yy > 200) { let st = ''; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rad = i % 2 ? 4 : 11; st += (i ? 'L' : 'M') + r2(Math.cos(a) * rad) + ',' + r2(Math.sin(a) * rad); }
+      shells += `<path d="${st}Z" class="f-starfish" stroke-linejoin="round" transform="translate(${r2(xx)},${r2(yy)}) rotate(${r2(r() * 70)}) scale(${r2(.8 + r() * .5)},${r2(.45 + r() * .15)})"/>`; }
+    else dots += `<ellipse cx="${r2(xx)}" cy="${r2(yy)}" rx="${r2(1.2 + r() * 2.6)}" ry="${r2(.8 + r() * 1.4)}"/>`;
+  }
+  // a trail of webbed footprints — somebody walked here earlier
+  for (const [base, amp, ph] of [[58, 14, 0], [250, 40, 2], [470, 30, 4]]) {
+    if (duneY(0) + base > yb - 30) continue;
+    for (let x = x0, i = 0; x < x1; x += 30, i++) {
+      const y = duneY(x) + base + amp * Math.sin(x * TAU / DUNE_P * 3 + ph) + (i % 2 ? 5 : -5);
+      tracks += `<g transform="translate(${x},${r2(y)}) rotate(${r2(Math.cos(x * TAU / DUNE_P * 3 + ph) * 12)})"><path d="M0,0L9,-5.5Q7,0 9,5.5Z" opacity=".45"/><path d="M0,0L9,-5.5M0,0L10.5,0M0,0L9,5.5M0,0L-3,0" fill="none" class="s-track" stroke-width="1.7" stroke-linecap="round"/></g>`;
+    }
+  }
+  $('fg1G').innerHTML = `<g id="duneMove"><path d="${d}" class="f-sand"/><path d="${rim}" class="s-sandLt" stroke-width="3" fill="none"/><path d="${rim}" class="s-sandSh" stroke-width="10" fill="none" opacity=".35" transform="translate(0,9)"/><g class="f-pebble" opacity=".7">${dots}</g><g class="f-track" opacity=".75">${tracks}</g>${shells}</g><g id="tuftsG"></g>`;
+}
+function buildStars() {
+  const r = rng(99); let h = '';
+  const n = Math.round(view.W * Math.max(0, HORIZON - 40 - view.y0) / 8200);
+  for (let i = 0; i < n; i++) {
+    const x = view.x0 + r() * view.W, y = view.y0 + r() * (HORIZON - 50 - view.y0), big = r() < 0.07, s = big ? 1.9 : 0.5 + r() * 1.1;
+    h += big ? `<path d="M${r2(x)},${r2(y - 5)}Q${r2(x + .8)},${r2(y - .8)} ${r2(x + 5)},${r2(y)}Q${r2(x + .8)},${r2(y + .8)} ${r2(x)},${r2(y + 5)}Q${r2(x - .8)},${r2(y + .8)} ${r2(x - 5)},${r2(y)}Q${r2(x - .8)},${r2(y - .8)} ${r2(x)},${r2(y - 5)}Z" fill="#fffbe8" class="tw" style="--d:${r2(2 + r() * 3)}s;--dl:-${r2(r() * 4)}s"/>`
+      : `<circle cx="${r2(x)}" cy="${r2(y)}" r="${r2(s)}" fill="#fffbe8" class="tw" style="--d:${r2(1.6 + r() * 3)}s;--dl:-${r2(r() * 4)}s"/>`;
+  }
+  h += `<path id="shooting" d="M0,0L-110,40" stroke="#fffbe8" stroke-width="2" stroke-linecap="round" opacity="0"/>`;
+  $('starsG').innerHTML = h;
+}
+function buildGlitter() {
+  const r = rng(11); let h = '', m = '';
+  for (let i = 0; i < 52; i++) {
+    const d = Math.pow(r(), 1.4), y = lerp(HORIZON + 3, SHORE - 10, d), sp = lerp(14, 130, d), x = (r() + r() + r() - 1.5) * sp, len = lerp(4, 22, d) * (0.5 + r());
+    h += `<rect x="${r2(x - len / 2)}" y="${r2(y)}" width="${r2(len)}" height="${r2(lerp(.9, 2.2, d))}" rx="1" class="f-glint tw" style="--d:${r2(.5 + r() * 1.4)}s;--dl:-${r2(r() * 2)}s"/>`;
+    m += `<rect x="${r2(x * .7 - len / 2)}" y="${r2(y)}" width="${r2(len)}" height="${r2(lerp(.9, 2, d))}" rx="1" fill="#eef2ff" class="tw" style="--d:${r2(.7 + r() * 1.6)}s;--dl:-${r2(r() * 2)}s"/>`;
+  }
+  $('glitterG').innerHTML = h; $('moonPathG').innerHTML = m;
+}
+const waves = [];
+function buildWaves() {
+  const g = $('wavesG'); g.innerHTML = ''; waves.length = 0;
+  const r = rng(5), n = Math.round(view.W / 34);
+  for (let i = 0; i < n; i++) {
+    const d = Math.pow(r(), 0.85), y = lerp(HORIZON + 5, SHORE - 7, d), len = lerp(5, 30, d) * (0.6 + r() * 0.8);
+    const e = mk('path', { d: `M${r2(-len)},0Q0,${r2(-lerp(1, 4.5, d))} ${r2(len)},0`, class: 's-wave', fill: 'none', 'stroke-width': r2(lerp(0.8, 2.4, d)), 'stroke-linecap': 'round' }, g);
+    waves.push({ e, u: r(), y, f: lerp(0.04, 0.5, d), ph: r() * TAU, sp: 0.6 + r() });
+  }
+}
+let spawners = [];
+function layout() {
+  const vw = innerWidth || 1600, vh = innerHeight || 900, asp = vw / vh;
+  const W = Math.max(900 * asp, 760), H = W / asp;
+  Object.assign(view, { W, H, x0: -0.45 * W, y0: -675 - (H - 900) * 0.55 });
+  attr(svg, 'viewBox', `${r2(view.x0)} ${r2(view.y0)} ${r2(W)} ${r2(H)}`);
+  const gs = $('gSky'); attr(gs, 'y1', r2(view.y0));
+  const v = $('vig'); attr(v, 'x', r2(view.x0)); attr(v, 'y', r2(view.y0)); attr(v, 'width', r2(W)); attr(v, 'height', r2(H));
+  buildBoard(); buildShore(); buildDune(); buildStars(); buildGlitter(); buildWaves();
+  if (spawners.length) { spawners[5].g = $('tuftsG'); for (const it of spawners[5].items) it.el.remove(); spawners[5].items = []; }
+  themeK = -1;
+}
+
+/* ---- gulls & speed streaks ---- */
+const gulls = [], streaks = [];
+function resetGull(g, initial) {
+  g.s = rr(0.55, 1.1); g.vx = rr(-90, 40); g.y = rr(view.y0 + 70, HORIZON - 70); g.ph = rr(0, TAU); g.fw = rr(7, 10);
+  g.x = initial ? rr(view.x0, view.x0 + view.W) : (g.vx - S.v * 0.04 < 0 ? view.x0 + view.W + 60 : view.x0 - 60);
+  return g;
+}
+
+/* =========================================================================
+   draw — push the current state into the SVG
+   ========================================================================= */
+const E = {};
+['rig', 'shadowG', 'beamG', 'lampGlowG', 'farThigh', 'farThighO', 'nearThigh', 'nearThighO', 'farShinO', 'farShin', 'farFoot', 'farCrank', 'farPedal', 'nearCrank', 'nearPedal', 'nearShinO', 'nearShin', 'nearShinHi', 'nearFoot',
+  'uBody', 'uThigh', 'uNeck', 'uHead', 'crest1', 'crest2', 'bodyShade', 'thighFluff', 'wingArm', 'headD', 'jaw', 'pouch', 'pouchLines', 'mouthIn', 'lid', 'pupil', 'eyeOpen', 'eyeHappy',
+  'scarfA', 'scarfB', 'scarfASt', 'scarfBSt', 'scarfFr', 'scarfWrap', 'scarfWrapSh', 'scarfWrapSt', 'scarfKnot', 'ring', 'cog', 'chainLinks', 'bell', 'bellWaves', 'flyFish', 'flyFishIn', 'sparkles',
+  'basketFish', 'sunG', 'moonG', 'glitterG', 'moonPathG', 'rearGlow'].forEach(id => E[id] = $(id));
+const wheelEls = ['wR', 'wF'].map(id => { const g = $(id); return { rot: g.querySelectorAll('.wrot'), spk: g.querySelector('.spk'), blur: g.querySelector('.spkBlur'), uses: g.querySelectorAll('.spkBlur use'), disc: g.querySelector('.blurDisc') }; });
+
+function drawRig() {
+  const B = S.B, H = S.H;
+  const hp = S.hop, lt = S.t - S.landT, bounce = lt < 1 ? S.landAmp * 5 * Math.exp(-lt * 9) * Math.sin(lt * 32) : 0;
+  const pitch = hp.air ? -6 * clamp(-hp.vy / hp.v0, -1, 1) : 0;
+  const rigTf = `translate(${r2(S.surge)},${r2(hp.y + bounce)}) rotate(${r2(pitch)} 0 -98)`;
+  attr(E.rig, 'transform', rigTf); attr(E.beamG, 'transform', rigTf); attr(E.lampGlowG, 'transform', rigTf);
+  attr(E.shadowG, 'transform', `translate(${r2(S.surge)},0) scale(${r2(1 - Math.min(0.45, -hp.y / 260))},1)`);
+  attr(E.shadowG, 'opacity', r2(1 - Math.min(0.6, -hp.y / 180)));
+  drawCrab();
+  // wheels
+  const wd = S.wheel / DEG, dd = S.v / WHEEL_R * S.dtS / DEG, bk = smooth(2.5, 9, dd);
+  for (const w of wheelEls) {
+    for (const r of w.rot) attr(r, 'transform', `rotate(${r2(wd % 360)})`);
+    attr(w.spk, 'transform', `rotate(${r2(wd % 360)})`); attr(w.spk, 'opacity', r2(1 - 0.5 * bk));
+    attr(w.blur, 'opacity', r2(bk));
+    w.uses.forEach((u, i) => attr(u, 'transform', `rotate(${r2((wd - dd * (i + 1) / 3) % 360)})`));
+    attr(w.disc, 'opacity', r2(0.13 * smooth(6, 22, dd)));
+  }
+  // drivetrain
+  const cd = S.crank / DEG;
+  attr(E.ring, 'transform', `translate(${P(BB)}) rotate(${r2(cd % 360)})`);
+  attr(E.cog, 'transform', `translate(${P(RA)}) rotate(${r2((S.crank * RING_R / COG_R / DEG) % 360)})`);
+  attr(E.chainLinks, 'stroke-dashoffset', r2(-mod(S.crank * RING_R, CHAIN.per * 40)));
+  attr(E.chainLinks, 'opacity', r2(1 - 0.7 * smooth(1.6, 3.2, S.crankW * RING_R * S.dtS)));
+  // legs
+  const nl = leg(B, HIP_N, 0), fl = leg(B, HIP_F, Math.PI);
+  attr(E.nearCrank, 'transform', `translate(${P(BB)}) rotate(${r2(cd % 360)})`);
+  attr(E.farCrank, 'transform', `translate(${P(BB)}) rotate(${r2((cd + 180) % 360)})`);
+  attr(E.nearPedal, 'transform', `translate(${P(nl.p)}) rotate(${r2(nl.beta / DEG)})`);
+  attr(E.farPedal, 'transform', `translate(${P(fl.p)}) rotate(${r2(fl.beta / DEG)})`);
+  const seg = (e, a, b) => { attr(e, 'x1', r2(a[0])); attr(e, 'y1', r2(a[1])); attr(e, 'x2', r2(b[0])); attr(e, 'y2', r2(b[1])); };
+  for (const [e, l] of [[E.farShinO, fl], [E.farShin, fl], [E.nearShinO, nl], [E.nearShin, nl]]) seg(e, l.K, l.A);
+  for (const [e, l] of [[E.farThighO, fl], [E.farThigh, fl], [E.nearThighO, nl], [E.nearThigh, nl]]) seg(e, l.H, l.K);
+  { const k = nl.K, a = nl.A, dx = a[0] - k[0], dy = a[1] - k[1], L = Math.hypot(dx, dy) || 1; attr(E.nearShinHi, 'x1', r2(k[0] + dx / L * 26 + dy / L * 2.4)); attr(E.nearShinHi, 'y1', r2(k[1] + dy / L * 26 - dx / L * 2.4)); attr(E.nearShinHi, 'x2', r2(a[0] - dx / L * 10 + dy / L * 2.4)); attr(E.nearShinHi, 'y2', r2(a[1] - dy / L * 10 - dx / L * 2.4)); }
+  attr(E.farFoot, 'transform', `translate(${P(fl.A)}) rotate(${r2(fl.beta / DEG)})`);
+  attr(E.nearFoot, 'transform', `translate(${P(nl.A)}) rotate(${r2(nl.beta / DEG)})`);
+  {   // feathered "trousers" on the upper thigh — part of the white body union, so it merges seamlessly
+    const h = nl.H, k = nl.K, dx = k[0] - h[0], dy = k[1] - h[1], L = Math.hypot(dx, dy) || 1, u = [dx / L, dy / L], n = [-u[1], u[0]];
+    const at = (a, s) => P([h[0] + u[0] * a + n[0] * s, h[1] + u[1] * a + n[1] * s]);
+    const len = 48, h1 = 23, h2 = 16;
+    attr(E.uThigh, 'd', `M${at(0, h1)}L${at(len, h2)}Q${at(len + 6, h2 * .7)} ${at(len + 9, h2 * .45)}L${at(len + 2, h2 * .18)}L${at(len + 11, 0)}L${at(len + 2, -h2 * .18)}L${at(len + 9, -h2 * .45)}Q${at(len + 6, -h2 * .7)} ${at(len, -h2)}L${at(0, -h1)}A${h1},${h1} 0 0 0 ${at(0, h1)}Z`);
+    attr(E.thighFluff, 'd', `M${at(20, 9)}Q${at(27, 6)} ${at(30, 0)}M${at(30, -4)}Q${at(36, -7)} ${at(40, -11)}`);
+  }
+  // body
+  const btf = tf(B);
+  attr(E.uBody, 'transform', btf); attr(E.bodyShade, 'transform', btf);
+  // wing (shoulder → wrist; the hand stays on the grip)
+  const sh = ap(B, SHOULDER), wdx = WRIST[0] - sh[0], wdy = WRIST[1] - sh[1];
+  attr(E.wingArm, 'transform', `translate(${P(sh)}) rotate(${r2(Math.atan2(wdy, wdx) / DEG)}) scale(${(Math.hypot(wdx, wdy) / WING_L).toFixed(4)},1)`);
+  // neck
+  { const sp = S.spine; let d = 'M' + P([sp[0].p[0] + sp[0].n[0] * sp[0].w / 2, sp[0].p[1] + sp[0].n[1] * sp[0].w / 2]);
+    for (let i = 1; i <= NECK_N; i++) d += 'L' + P([sp[i].p[0] + sp[i].n[0] * sp[i].w / 2, sp[i].p[1] + sp[i].n[1] * sp[i].w / 2]);
+    for (let i = NECK_N; i >= 0; i--) d += 'L' + P([sp[i].p[0] - sp[i].n[0] * sp[i].w / 2, sp[i].p[1] - sp[i].n[1] * sp[i].w / 2]);
+    attr(E.uNeck, 'd', d + 'Z'); }
+  // head
+  const htf = tf(H);
+  attr(E.uHead, 'transform', htf); attr(E.headD, 'transform', htf);
+  const fl1 = Math.sin(S.t * 13 + 0.4) * (2 + S.mul * 3) - S.mul * 4, fl2 = Math.sin(S.t * 15.5 + 1.8) * (2 + S.mul * 3) - S.mul * 3;
+  attr(E.crest1, 'transform', `rotate(${r2(fl1)} -25 -13)`); attr(E.crest2, 'transform', `rotate(${r2(fl2)} -27 -5)`);
+  const jawDeg = S.jaw / DEG;
+  attr(E.jaw, 'transform', `rotate(${r2(jawDeg)} 34 9)`);
+  { const sag = 26 + S.pouch.s * 14 + S.bulge * 20 + jawDeg * 0.25, wob = S.bulge * Math.sin(S.t * 22) * 4;
+    attr(E.pouch, 'd', `M38,22C60,${r2(22 + sag * 1.05)} 118,${r2(36 + sag * 1.1 + wob)} 158,${r2(44 + sag * 0.3)}C164,${r2(44 + sag * 0.1)} 168,42 170,41C124,36 80,30 38,22Z`);
+    attr(E.pouchLines, 'd', `M70,${r2(31)}Q76,${r2(30 + sag * .55)} 74,${r2(30 + sag * .85)}M98,35Q104,${r2(34 + sag * .55)} 100,${r2(34 + sag * .8)}M124,39Q128,${r2(38 + sag * .4)} 126,${r2(38 + sag * .55)}`);
+    const g = S.jaw, rp = p => { const dx = p[0] - 34, dy = p[1] - 9, c = Math.cos(g), s = Math.sin(g); return [34 + dx * c - dy * s, 9 + dx * s + dy * c]; };
+    attr(E.mouthIn, 'd', g > 0.01 ? `M34,9L80,13L130,24L172,35L${P(rp([172, 37]))}L${P(rp([130, 26]))}L${P(rp([80, 15]))}Z` : ''); }
+  // eye
+  if (S.lid > 0.02) {
+    const cy = -9, rx = 9.4, ry = 10.4, yl = cy - ry + 2 * ry * S.lid, hw = rx * Math.sqrt(Math.max(0, 1 - Math.pow((yl - cy) / ry, 2)));
+    attr(E.lid, 'd', `M${r2(12 - hw)},${r2(yl)}A${rx},${ry} 0 ${yl > cy ? 1 : 0} 1 ${r2(12 + hw)},${r2(yl)}Q12,${r2(yl + 3 * Math.min(1, S.lid * 3))} ${r2(12 - hw)},${r2(yl)}Z`);
+  } else attr(E.lid, 'd', '');
+  let lx = 1.4, ly = 0.8;
+  if (S.gag && (S.gag.mode === 'fly')) { const q = inv(H, [S.gag.fx, S.gag.fy]); const dx = q[0] - 13.6, dy = q[1] + 8.4, L = Math.hypot(dx, dy) || 1; lx = dx / L * 2.6; ly = dy / L * 2.6; }
+  S.look[0] = lerp(S.look[0], lx, 0.25); S.look[1] = lerp(S.look[1], ly, 0.25);
+  attr(E.pupil, 'transform', `translate(${r2(S.look[0] - 1.4)},${r2(S.look[1] - 0.8)})`);
+  attr(E.eyeOpen, 'opacity', r2(1 - S.happy)); attr(E.eyeHappy, 'opacity', r2(S.happy));
+  // scarf
+  const ra = ribbon(SCARF[0]), rb = ribbon(SCARF[1]);
+  attr(E.scarfA, 'd', ra.d); attr(E.scarfASt, 'd', ra.st); attr(E.scarfB, 'd', rb.d); attr(E.scarfBSt, 'd', rb.st); attr(E.scarfFr, 'd', ra.fr + rb.fr);
+  { const sp = S.spine, i0 = 6, i1 = 8, L = [], R = [];
+    for (let i = i0; i <= i1; i++) { const s = sp[i], e = s.w / 2 + 3.5; L.push([s.p[0] + s.n[0] * e, s.p[1] + s.n[1] * e]); R.push([s.p[0] - s.n[0] * e, s.p[1] - s.n[1] * e]); }
+    attr(E.scarfWrap, 'd', through(L, 'M') + through(R.slice().reverse(), 'L') + 'Z');
+    const s3 = sp[(i0 + i1) >> 1];
+    const edge = (s, k) => [s.p[0] + s.n[0] * (s.w / 2 + 3) * k, s.p[1] + s.n[1] * (s.w / 2 + 3) * k];
+    attr(E.scarfWrapSh, 'd', `M${P(edge(sp[i1], .9))}L${P(edge(sp[i1], -.9))}`);
+    attr(E.scarfWrapSt, 'd', `M${P(edge(s3, .85))}Q${P(s3.p)} ${P(edge(s3, -.85))}`);
+    const k = knotPoint();
+    attr(E.scarfKnot, 'd', `M${P([k[0] + 2, k[1] - 8])}C${P([k[0] - 9, k[1] - 10])} ${P([k[0] - 11, k[1] + 6])} ${P([k[0] - 2, k[1] + 9])}C${P([k[0] + 6, k[1] + 11])} ${P([k[0] + 9, k[1] - 4])} ${P([k[0] + 2, k[1] - 8])}Z`);
+  }
+  // bell
+  const bt = S.t - S.bellT;
+  attr(E.bell, 'transform', bt < 0.8 ? `rotate(${r2(9 * Math.exp(-bt * 6) * Math.sin(bt * TAU * 13))} 88 -297)` : '');
+  if (bt < 0.9) {
+    attr(E.bellWaves, 'opacity', r2(smooth(0, 0.05, bt) * (1 - smooth(0.35, 0.9, bt))));
+    attr(E.bellWaves, 'transform', `translate(${r2(98 + bt * 26)},${r2(-318 - bt * 44)}) rotate(-50) scale(${r2(0.85 + bt * 0.8)})`);
+  } else attr(E.bellWaves, 'opacity', 0);
+  // fish gag
+  const g = S.gag;
+  attr(E.basketFish, 'opacity', S.basketFish);
+  if (g && (g.mode === 'held' || g.mode === 'fly')) {
+    attr(E.flyFish, 'opacity', 1);
+    if (g.mode === 'held') { const tip = ap(H, [178, 56]); attr(E.flyFish, 'transform', `translate(${P(tip)}) rotate(${r2(H.a / DEG + 75 + Math.sin(S.t * 18) * 8)})`); }
+    else { const sc = 1 - 0.45 * smooth(GAG_LAND - 0.1, GAG_LAND, S.t - g.t0); attr(E.flyFish, 'transform', `translate(${r2(g.fx)},${r2(g.fy)}) rotate(${r2(g.spin)}) scale(${r2(sc)})`); }
+  } else attr(E.flyFish, 'opacity', 0);
+  if (g) {
+    const tau = S.t - g.t0, sk = tau > 2.2 && tau < 3.25 ? Math.sin(Math.PI * (tau - 2.2) / 1.05) : 0;
+    attr(E.sparkles, 'opacity', r2(sk));
+    if (sk > 0) { const kids = E.sparkles.children, base = ap(H, [10, -40]);
+      for (let i = 0; i < 3; i++) { const a = -1.9 + i * 0.75, rad = 18 + (tau - 2.2) * 40; attr(kids[i], 'transform', `translate(${r2(base[0] + Math.cos(a) * rad)},${r2(base[1] + Math.sin(a) * rad)}) scale(${r2(0.5 + 0.5 * Math.sin((tau - 2.2) * 9 + i * 2))})`); } }
+  } else attr(E.sparkles, 'opacity', 0);
+  // rear light blinks at night
+  attr(E.rearGlow, 'opacity', r2(0.55 + 0.45 * Math.sin(S.t * 5)));
+}
+
+const crabEls = (() => { const g = $('crab'); return { g, legs: [...g.querySelectorAll('.crabLeg')], cl: g.querySelector('.clawL'), cr: g.querySelector('.clawR'), pup: g.querySelector('.crabPupils'), bang: g.querySelector('.crabBang') }; })();
+function drawCrab() {
+  const c = S.crab, G = $('crabG');
+  if (!c) { attr(G, 'opacity', 0); return; }
+  const dg = c.dodge ? S.t - c.dodge : 0;
+  attr(G, 'opacity', r2(1 - smooth(0.1, 0.5, dg)));
+  attr(G, 'transform', dg ? `translate(0,${r2(dg * 140)})` : '');
+  const x = c.x - S.scroll, st = S.t - c.surprised, scared = st >= 0 && st < 1.1, walkRate = Math.abs(c.walk) > 30 ? 26 : 14;
+  attr(crabEls.g, 'transform', `translate(${r2(x)},${r2(scared ? -Math.abs(Math.sin(st * 16)) * 4 * (1 - st) : Math.abs(Math.sin(S.t * walkRate)) * -1.3)}) scale(1.35)`);
+  for (const l of crabEls.legs) { const i = +l.dataset.i, sd = +l.dataset.side; attr(l, 'transform', `rotate(${r2(Math.sin(S.t * walkRate + i * 2.1 + (sd > 0 ? Math.PI : 0)) * 12)} ${l.dataset.ax} ${l.dataset.ay})`); }
+  const up = scared ? 38 * Math.min(1, st * 8) : 6 * Math.sin(S.t * 3), snap = Math.sin(S.t * 18) * (scared ? 8 : 3);
+  attr(crabEls.cl, 'transform', `rotate(${r2(up + snap)} -14 -11)`); attr(crabEls.cr, 'transform', `rotate(${r2(-up - snap)} 14 -11)`);
+  const look = clamp((S.surge - x) / 300, -1, 1);
+  attr(crabEls.pup, 'transform', `translate(${r2(look * 1.5)},${scared ? -0.8 : 0})`);
+  attr(crabEls.bang, 'opacity', scared ? r2(Math.min(1, st * 10) * (1 - smooth(0.8, 1.1, st))) : 0);
+  attr(crabEls.bang, 'transform', scared ? `translate(0,${r2(-st * 8)})` : '');
+}
+function drawWorld() {
+  const k = S.night;
+  applyTheme(k);
+  // sun & moon
+  const sx = view.x0 + view.W * 0.86, sy0 = view.y0 + Math.min(118, (HORIZON - view.y0) * 0.3);
+  const sy = k <= 0.5 ? lerp(sy0, HORIZON + 8, easeIO(k / 0.5)) : lerp(HORIZON + 8, HORIZON + 80, smooth(0.5, 0.66, k));
+  attr(E.sunG, 'transform', `translate(${r2(sx)},${r2(sy)}) scale(${r2(1 + smooth(0.2, 0.5, k) * 0.18)})`);
+  attr($('sunGlow'), 'opacity', r2(1 - smooth(0.62, 0.95, k)));
+  attr(E.glitterG, 'transform', `translate(${r2(sx)},0)`); attr(E.glitterG, 'opacity', r2(0.9 * (1 - smooth(0.52, 0.64, k))));
+  const mx = view.x0 + view.W * 0.7, my0 = view.y0 + Math.min(104, (HORIZON - view.y0) * 0.28);
+  const my = lerp(HORIZON + 60, my0, smooth(0.55, 1, k));
+  attr(E.moonG, 'transform', `translate(${r2(mx)},${r2(my)})`); attr(E.moonG, 'opacity', r2(smooth(0.5, 0.7, k)));
+  attr(E.moonPathG, 'transform', `translate(${r2(mx)},0)`); attr(E.moonPathG, 'opacity', r2(smooth(0.75, 1, k) * 0.85));
+  // shooting star (night only)
+  if (k > 0.85) {
+    const sh = $('shooting'), cyc = S.t % 9;
+    if (cyc < 0.7) { const u = cyc / 0.7, x = view.x0 + view.W * (0.55 + (Math.floor(S.t / 9) * 0.37 % 0.35)) - u * 260, y = view.y0 + 60 + u * 95; attr(sh, 'transform', `translate(${r2(x)},${r2(y)})`); attr(sh, 'opacity', r2(Math.sin(Math.PI * u))); }
+    else attr(sh, 'opacity', 0);
+  }
+  // periodic layers
+  const bm = $('boardMove'); attr(bm, 'transform', `translate(${r2(-mod(S.scroll, 960))},0)`);
+  const blur = S.v * S.dtS * 0.7, sw = 1.6 + blur;
+  const seams = $('seams'); attr(seams, 'stroke-width', r2(sw)); attr(seams, 'opacity', r2(Math.min(1, 1.9 / sw)));
+  attr($('nails'), 'opacity', r2(0.6 * (1 - smooth(6, 18, blur))));
+  attr($('shoreMove'), 'transform', `translate(${r2(-mod(S.scroll * 0.55, 720))},0)`);
+  attr($('foam1'), 'transform', `translate(0,${r2(1.6 * Math.sin(S.t * 0.9))})`);
+  attr($('foam2'), 'transform', `translate(0,${r2(2.6 * Math.sin(S.t * 0.9 - 1.2))})`); attr($('foam2'), 'opacity', r2(0.35 + 0.3 * Math.sin(S.t * 0.9 - 1.2)));
+  attr($('duneMove'), 'transform', `translate(${r2(-mod(S.scroll * 1.3, DUNE_P))},0)`);
+  const Wr = view.W + 200;
+  for (const w of waves) {
+    const x = view.x0 - 100 + mod(w.u * Wr - S.scroll * w.f - S.t * 6, Wr);
+    attr(w.e, 'transform', `translate(${r2(x)},${r2(w.y)})`); attr(w.e, 'opacity', r2(0.12 + 0.55 * Math.pow(Math.sin(S.t * w.sp + w.ph) * 0.5 + 0.5, 2)));
+  }
+  for (const sp of spawners) sp.update();
+  // gulls
+  for (const gl of gulls) {
+    gl.x += (gl.vx - S.v * 0.04) * S.dt;
+    if (gl.x < view.x0 - 120 || gl.x > view.x0 + view.W + 120) resetGull(gl, false);
+    const fl = Math.sin(S.t * gl.fw + gl.ph), glide = Math.sin(S.t * 0.4 + gl.ph) > 0.6 ? 0.25 : 1, f = fl * glide, s = gl.s;
+    attr(gl.e, 'd', `M${r2(-15 * s)},${r2(-6 * f * s)}Q${r2(-7 * s)},${r2((-4 - 5 * f) * s)} 0,0Q${r2(7 * s)},${r2((-4 - 5 * f) * s)} ${r2(15 * s)},${r2(-6 * f * s)}`);
+    attr(gl.e, 'transform', `translate(${r2(gl.x)},${r2(gl.y + Math.sin(S.t * 1.1 + gl.ph) * 8)})`);
+  }
+  // speed streaks
+  const kk = smooth(1.2, 1.85, S.mul);
+  for (const s of streaks) {
+    s.life -= S.dt;
+    if (s.life <= 0) {
+      if (kk > 0 && rand() < S.dt * 12 * kk) { s.life = s.max = rr(0.22, 0.42); s.x = rr(120, 520); s.y = rand() < 0.6 ? rr(-250, -40) : rr(-560, -300); s.len = rr(90, 240); s.v = rr(1500, 2300); }
+      else { attr(s.e, 'opacity', 0); continue; }
+    }
+    s.x -= s.v * S.dt;
+    attr(s.e, 'x', r2(s.x)); attr(s.e, 'y', r2(s.y)); attr(s.e, 'width', r2(s.len)); attr(s.e, 'opacity', r2(Math.sin(Math.PI * (1 - s.life / s.max)) * 0.85 * kk));
+  }
+}
+function draw() { drawWorld(); drawRig(); }
+
+/* =========================================================================
+   setup
+   ========================================================================= */
+function init() {
+  spawners = [
+    new Spawner($('cloudsG'), 0.02, makeCloud, () => rr(60, 340), 340),
+    new Spawner($('farG'), 0.035, makeFar, () => rr(120, 900), 500),
+    new Spawner($('boatsG'), 0.07, makeBoat, () => rr(140, 620), 200),
+    new Spawner($('beachG'), 0.6, makeBeach, () => rr(90, 520), 320),
+    new Spawner($('fg2G'), 1.75, makeFg2, () => rr(700, 1900), 300),
+    new Spawner($('tuftsG'), 1.3, makeTuft, () => rr(40, 300), 200),
+  ];
+  for (let i = 0; i < 4; i++) gulls.push(resetGull({ e: mk('path', { class: 's-gull', fill: 'none', 'stroke-width': 2.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, $('gullsG')) }, true));
+  for (let i = 0; i < 9; i++) streaks.push({ e: mk('rect', { height: 2.6, rx: 1.3, fill: 'url(#gStreak)', opacity: 0 }, $('fxG')), life: 0 });
+  S.B = bodyFrame(); headStep(0); computeSpine(); scarfInit();
+}
+layout();
+init();
+
+const dark = (() => { const t = document.documentElement.getAttribute('data-theme'); if (t) return t === 'dark'; return matchMedia('(prefers-color-scheme: dark)').matches; })();
+S.night = S.nightTarget = dark ? 1 : 0;
+for (let i = 0; i < 150; i++) step(1 / 60);     // pre-roll so the scarf is already flying
+S.nextGag = S.t + 11;
+draw();
+
+/* =========================================================================
+   sound: a two-strike bicycle bell, synthesised on demand
+   ========================================================================= */
+let actx = null;
+function ding(t, gain) {
+  const out = actx.createGain(); out.gain.value = gain; out.connect(actx.destination);
+  for (const [f, a, d] of [[2093, 1, 1.3], [2106, .7, 1.2], [4660, .32, .6], [6020, .18, .35], [8240, .08, .22]]) {
+    const o = actx.createOscillator(), g = actx.createGain(); o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(a, t + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g).connect(out); o.start(t); o.stop(t + d + 0.05);
+  }
+}
+function blip(t, f0, f1, d, gain) {
+  const o = actx.createOscillator(), g = actx.createGain(); o.type = 'sine';
+  o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + d);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(gain, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  o.connect(g).connect(actx.destination); o.start(t); o.stop(t + d + 0.05);
+}
+function audio() { try { if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)(); if (actx.state === 'suspended') actx.resume(); return true; } catch (e) { return false; } }
+function ringBell() {
+  if (S.paused) setPaused(false);
+  S.bellT = S.t;
+  if (audio()) { const t = actx.currentTime + 0.01; ding(t, 0.16); ding(t + 0.17, 0.13); }
+}
+function feed() {
+  if (S.paused) setPaused(false);
+  if (S.gag) return;
+  startGag();
+  if (audio()) { const t = actx.currentTime; blip(t + GAG_LAND + 0.03, 420, 160, 0.16, 0.22); blip(t + 2.2, 300, 120, 0.22, 0.16); }
+}
+function jump() {
+  if (S.paused) setPaused(false);
+  const { g, v0 } = hopParams(62);
+  if (hop(g, v0) && audio()) { const t = actx.currentTime; blip(t, 190, 520, 0.2, 0.14); blip(t + 2 * v0 / g, 140, 70, 0.12, 0.2); }
+}
+function clap() {
+  if (S.paused) setPaused(false);
+  if (S.gag) return;
+  S.clapT = S.t;
+  if (audio()) { const t = actx.currentTime; blip(t, 900, 500, 0.05, 0.12); blip(t + 0.2, 900, 500, 0.05, 0.12); }
+}
+
+/* =========================================================================
+   UI
+   ========================================================================= */
+const ICON = {
+  pause: '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="5" width="3.6" height="14" rx="1.2"/><rect x="13.9" y="5" width="3.6" height="14" rx="1.2"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.6v12.8c0 .8.9 1.3 1.6.9l10-6.4c.6-.4.6-1.4 0-1.8l-10-6.4C8.9 4.3 8 4.8 8 5.6z"/></svg>',
+  moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19.5 14.6A8 8 0 0 1 9.4 4.5a8 8 0 1 0 10.1 10.1z"/></svg>',
+  sun: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.8v2.1M12 19.1v2.1M2.8 12h2.1M19.1 12h2.1M5.5 5.5 7 7M17 17l1.5 1.5M5.5 18.5 7 17M17 7l1.5-1.5"/></svg>',
+};
+const dock = $('dock'), hint = $('hint'), bPlay = $('bPlay'), bNight = $('bNight'), speedIn = $('speed'), kmhEl = $('kmh'), odoEl = $('odo');
+function setPaused(p) {
+  S.paused = p;
+  bPlay.innerHTML = p ? ICON.play : ICON.pause;
+  bPlay.setAttribute('aria-label', p ? '播放' : '暂停'); bPlay.title = (p ? '播放' : '暂停') + '（空格）';
+  svg.classList.toggle('paused', p);
+  wake();
+}
+function syncNightBtn() {
+  const toNight = S.nightTarget < 0.5;
+  bNight.innerHTML = toNight ? ICON.moon : ICON.sun;
+  bNight.setAttribute('aria-label', toNight ? '切换到夜晚' : '切换到白天');
+}
+function toggleNight() { S.nightTarget = S.nightTarget < 0.5 ? 1 : 0; syncNightBtn(); }
+function syncSpeed() { speedIn.style.setProperty('--fill', r2((+speedIn.value - 0.3) / 1.7 * 100) + '%'); }
+function nudge(d) { speedIn.value = clamp(+speedIn.value + d, 0.3, 2); S.targetMul = +speedIn.value; syncSpeed(); }
+bPlay.addEventListener('click', () => setPaused(!S.paused));
+$('bBell').addEventListener('click', ringBell);
+$('bFish').addEventListener('click', feed);
+bNight.addEventListener('click', toggleNight);
+speedIn.addEventListener('input', () => { S.targetMul = +speedIn.value; syncSpeed(); });
+$('bell').addEventListener('click', e => { e.stopPropagation(); ringBell(); });
+$('basketG').addEventListener('click', e => { e.stopPropagation(); feed(); });
+$('pelican').addEventListener('click', e => { e.stopPropagation(); clap(); });
+$('rig').addEventListener('click', () => jump());
+addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const onBtn = e.target && e.target.tagName === 'BUTTON', onRange = e.target === speedIn;
+  if ((e.key === ' ' || e.key === 'Enter') && onBtn) return;
+  if (onRange && (e.key.startsWith('Arrow') || e.key === 'Home' || e.key === 'End' || e.key === 'PageUp' || e.key === 'PageDown')) return;
+  switch (e.key) {
+    case ' ': e.preventDefault(); setPaused(!S.paused); break;
+    case 'ArrowRight': case 'ArrowUp': e.preventDefault(); nudge(0.1); break;
+    case 'ArrowLeft': case 'ArrowDown': e.preventDefault(); nudge(-0.1); break;
+    case 'b': case 'B': ringBell(); break;
+    case 'f': case 'F': feed(); break;
+    case 'n': case 'N': toggleNight(); break;
+    case 'j': case 'J': jump(); break;
+  }
+});
+let idleT = 0;
+function wake() {
+  dock.classList.remove('idle');
+  clearTimeout(idleT);
+  idleT = setTimeout(() => { if (!S.paused && !dock.matches(':focus-within') && !dock.matches(':hover')) dock.classList.add('idle'); }, 3800);
+}
+['pointermove', 'pointerdown', 'keydown'].forEach(ev => addEventListener(ev, wake, { passive: true }));
+setTimeout(() => hint.classList.add('gone'), 7000);
+addEventListener('resize', () => { layout(); draw(); });
+syncSpeed(); syncNightBtn(); setPaused(false);
+{ // follow the viewer's light/dark theme live: dark → night ride
+  const mq = matchMedia('(prefers-color-scheme: dark)');
+  const onTheme = () => { const t = document.documentElement.getAttribute('data-theme'), d = t ? t === 'dark' : mq.matches; if ((S.nightTarget > 0.5) !== d) { S.nightTarget = d ? 1 : 0; syncNightBtn(); } };
+  if (mq.addEventListener) mq.addEventListener('change', onTheme); else if (mq.addListener) mq.addListener(onTheme);
+  new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+}
+if (matchMedia('(prefers-reduced-motion: reduce)').matches) setPaused(true);
+
+let last = performance.now(), uiT = 0;
+function loop(now) {
+  let dt = (now - last) / 1000; last = now;
+  if (!(dt > 0)) dt = 0; if (dt > 0.05) dt = 0.05;
+  if (!S.paused) { step(dt); draw(); }
+  else if (S.night !== S.nightTarget) { S.night = S.night < S.nightTarget ? Math.min(S.nightTarget, S.night + dt / 5.5) : Math.max(S.nightTarget, S.night - dt / 5.5); drawWorld(); }
+  uiT += dt;
+  if (uiT > 0.2) { uiT = 0; kmhEl.textContent = (S.v * UNIT_M * 3.6).toFixed(1) + ' km/h'; odoEl.textContent = '今日里程 ' + (S.scroll * UNIT_M / 1000).toFixed(2) + ' km'; }
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* test hook: advance the simulation deterministically */
+window.__pelican = { jump, S, step: (sec, fps = 60) => { const n = Math.round(sec * fps); for (let i = 0; i < n; i++) step(1 / fps); draw(); }, draw, feed, ringBell, toggleNight, setPaused, layout };
+})();
+</script>
+</body>
+</html>
